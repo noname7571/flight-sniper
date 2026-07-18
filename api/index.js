@@ -1,9 +1,4 @@
 // Vercel serverless entry for Flight Sniper
-// Imports the compiled Express app from backend build output
-const path = require('path');
-
-// On Vercel, the function runs from a temp directory.
-// backend/dist/app.js is built during the build step and bundled by Vercel.
-const backendApp = path.resolve(__dirname, 'backend', 'dist', 'app');
-const { app } = require(backendApp);
+// IMPORTANT: Use static require() so Vercel's bundler can follow it
+const { app } = require('../backend/dist/app');
 module.exports = app;
