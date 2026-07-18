@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "installCommand": "cd backend && npm install",
   "buildCommand": "bash vercel-build.sh",
   "functions": {
     "api/index.js": {
