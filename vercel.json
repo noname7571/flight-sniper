@@ -1,20 +1,21 @@
 {
   "version": 2,
-  "buildCommand": "cd backend && npm install && npx tsc",
-  "outputDirectory": ".",
   "installCommand": "cd backend && npm install",
+  "buildCommand": "cd backend && npx tsc",
+  "outputDirectory": ".",
   "functions": {
-    "api/index.ts": {
+    "backend/api/index.ts": {
       "memory": 256,
       "maxDuration": 10
     },
-    "api/cron.ts": {
+    "backend/api/cron.ts": {
       "memory": 256,
       "maxDuration": 60
     }
   },
   "routes": [
-    { "src": "/api/(.*)", "dest": "api/index.ts" },
-    { "src": "/", "dest": "api/index.ts" }
+    { "src": "/api/cron", "dest": "backend/api/cron.ts" },
+    { "src": "/api/(.*)", "dest": "backend/api/index.ts" },
+    { "src": "/(.*)", "dest": "backend/api/index.ts" }
   ]
 }
