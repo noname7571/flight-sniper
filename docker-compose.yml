@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  flight-sniper:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - SERPAPI_API_KEY=${SERPAPI_API_KEY}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      # Optional: use PostgreSQL instead of SQLite
+      # - DATABASE_URL=${DATABASE_URL}
+    volumes:
+      - flight-sniper-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  flight-sniper-data:
