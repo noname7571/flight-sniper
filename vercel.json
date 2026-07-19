@@ -1,9 +1,10 @@
 {
   "version": 2,
   "buildCommand": "bash vercel-build.sh",
-  "rewrites": [
+  "routes": [
     { "source": "/api/cron", "destination": "/api/cron" },
     { "source": "/api/(.*)", "destination": "/api/index" },
+    { "handle": "filesystem" },
     { "source": "/(.*)", "destination": "/frontend/index.html" }
   ]
 }
