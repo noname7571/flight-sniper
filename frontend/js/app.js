@@ -1,378 +1,405 @@
-const API_BASE = '/api';
+(function() {
+  'use strict';
 
-// State
-let routes = [];
-let priceChart = null;
+  const API = '/api';
+  let routes = [];
+  let priceChart = null;
 
-// DOM refs
-const routeForm = document.getElementById('routeForm');
-const routesList = document.getElementById('routesList');
-const routeCount = document.getElementById('routeCount');
-const statusDot = document.getElementById('statusDot');
-const statusText = document.getElementById('statusText');
-const historyCard = document.getElementById('historyCard');
-const historyRouteSelect = document.getElementById('historyRouteSelect');
-const historyTableBody = document.getElementById('historyTableBody');
-const refreshHistoryBtn = document.getElementById('refreshHistory');
+  // --- DOM refs ---
+  const $ = function(id) { return document.getElementById(id); };
+  const routeForm = $('routeForm');
+  const routesList = $('routesList');
+  const routeListContainer = $('routeListContainer');
+  const routeCount = $('routeCount');
+  const statusDot = $('statusDot');
+  const statusText = $('statusText');
+  const historyPanel = $('historyPanel');
+  const historyRouteSelect = $('historyRouteSelect');
+  const historyTableBody = $('historyTableBody');
+  const refreshHistoryBtn = $('refreshHistory');
+  const panelToggle = $('panelToggle');
+  const addRoutePanel = $('addRoutePanel');
+  const submitBtn = $('submitBtn');
 
-// Toast - use textContent to prevent XSS
-function showToast(message, type = 'success') {
-  const toast = document.getElementById('toast');
-  toast.textContent = message;
-  toast.className = 'toast ' + type;
-  setTimeout(function() { toast.classList.add('hidden'); }, 4000);
-}
+  // --- Stats elements ---
+  var statRoutes = $('statRoutes');
+  var statAlerts = $('statAlerts');
+  var statChecks = $('statChecks');
+  var statStatus = $('statStatus');
 
-// API helpers
-async function apiFetch(path, options) {
-  if (!options) options = {};
-  var headers = { 'Content-Type': 'application/json' };
-  if (options.headers) {
-    for (var key in options.headers) {
-      headers[key] = options.headers[key];
-    }
-  }
-  var fetchOptions = {
-    headers: headers,
-  };
-  if (options.method) fetchOptions.method = options.method;
-  if (options.body) fetchOptions.body = options.body;
-
-  var res = await fetch(API_BASE + path, fetchOptions);
-  if (!res.ok) {
-    var err;
-    try { err = await res.json(); } catch(e) { err = { error: res.statusText }; }
-    throw new Error(err.error || 'Request failed');
-  }
-  if (res.status === 204) return null;
-  return res.json();
-}
-
-// Check server health
-async function checkHealth() {
-  try {
-    await apiFetch('/health');
-    statusDot.className = 'status-dot online';
-    statusText.textContent = 'Connected';
-    return true;
-  } catch(e) {
-    statusDot.className = 'status-dot offline';
-    statusText.textContent = 'Disconnected';
-    return false;
-  }
-}
-
-// Load routes
-async function loadRoutes() {
-  try {
-    routes = await apiFetch('/routes');
-    renderRoutes();
-    updateHistorySelect();
-  } catch (err) {
-    showToast('Failed to load routes: ' + err.message, 'error');
-  }
-}
-
-// Update history dropdown
-function updateHistorySelect() {
-  historyRouteSelect.innerHTML = '<option value="">Select a route...</option>';
-  for (var i = 0; i < routes.length; i++) {
-    var opt = document.createElement('option');
-    opt.value = routes[i].id;
-    opt.textContent = routes[i].origin + ' -> ' + routes[i].destination;
-    historyRouteSelect.appendChild(opt);
-  }
-}
-
-// Render routes using textContent for safety
-function renderRoutes() {
-  routeCount.textContent = String(routes.length);
-
-  routesList.innerHTML = '';
-
-  if (routes.length === 0) {
-    var empty = document.createElement('div');
-    empty.className = 'empty-state';
-    var p = document.createElement('p');
-    p.textContent = 'No routes being monitored yet. Add one above!';
-    empty.appendChild(p);
-    routesList.appendChild(empty);
-    historyCard.style.display = 'none';
-    return;
-  }
-
-  for (var i = 0; i < routes.length; i++) {
-    var route = routes[i];
-    var item = document.createElement('div');
-    item.className = 'route-item';
-
-    var main = document.createElement('div');
-    main.className = 'route-main';
-
-    var dest = document.createElement('div');
-    dest.className = 'route-dest';
-    dest.textContent = route.origin + ' -> ' + route.destination;
-    main.appendChild(dest);
-
-    var meta = document.createElement('div');
-    meta.className = 'route-meta';
-
-    var maxSpan = document.createElement('span');
-    maxSpan.textContent = 'Max: ' + route.max_price + ' ' + route.currency;
-    meta.appendChild(maxSpan);
-
-    var intervalSpan = document.createElement('span');
-    intervalSpan.textContent = 'Every ' + route.check_interval_minutes + 'min';
-    meta.appendChild(intervalSpan);
-
-    if (route.return_ticket) {
-      var rtSpan = document.createElement('span');
-      rtSpan.textContent = 'Return';
-      var rtTag = document.createElement('span');
-      rtTag.className = 'route-detail-tag';
-      rtTag.textContent = 'Round trip';
-      rtSpan.appendChild(rtTag);
-      meta.appendChild(rtSpan);
-    }
-
-    if (route.include_destinations) {
-      var incSpan = document.createElement('span');
-      incSpan.textContent = 'Only: ' + route.include_destinations;
-      meta.appendChild(incSpan);
-    }
-
-    if (route.exclude_destinations) {
-      var excSpan = document.createElement('span');
-      excSpan.textContent = 'Exclude: ' + route.exclude_destinations;
-      meta.appendChild(excSpan);
-    }
-
-    main.appendChild(meta);
-    item.appendChild(main);
-
-    var actions = document.createElement('div');
-    actions.className = 'route-actions';
-
-    var historyBtn = document.createElement('button');
-    historyBtn.className = 'btn btn-secondary';
-    historyBtn.textContent = 'History';
-    historyBtn.addEventListener('click', function(id) {
-      return function() { showHistory(id); };
-    }(route.id));
-    actions.appendChild(historyBtn);
-
-    var delBtn = document.createElement('button');
-    delBtn.className = 'btn btn-danger';
-    delBtn.textContent = 'Remove';
-    delBtn.addEventListener('click', function(id) {
-      return function() { deleteRoute(id); };
-    }(route.id));
-    actions.appendChild(delBtn);
-
-    item.appendChild(actions);
-    routesList.appendChild(item);
-  }
-}
-
-// Add route
-async function addRoute(data) {
-  try {
-    var route = await apiFetch('/routes', {
-      method: 'POST',
-      body: JSON.stringify(data),
+  // --- Panel toggle ---
+  var formCollapsed = false;
+  if (panelToggle) {
+    panelToggle.addEventListener('click', function() {
+      formCollapsed = !formCollapsed;
+      var routeFormEl = document.querySelector('.route-form');
+      if (routeFormEl) {
+        routeFormEl.style.display = formCollapsed ? 'none' : '';
+      }
+      panelToggle.classList.toggle('collapsed', formCollapsed);
     });
-    routes.push(route);
-    renderRoutes();
-    updateHistorySelect();
-    showToast('Now monitoring ' + route.origin + ' -> ' + route.destination);
-    return true;
-  } catch (err) {
-    showToast('Failed to add route: ' + err.message, 'error');
-    return false;
   }
-}
 
-// Delete route
-async function deleteRoute(id) {
-  try {
-    await apiFetch('/routes/' + id, { method: 'DELETE' });
-    routes = routes.filter(function(r) { return r.id !== id; });
-    renderRoutes();
-    updateHistorySelect();
-    showToast('Route removed');
-  } catch (err) {
-    showToast('Failed to remove route: ' + err.message, 'error');
+  // --- Toast system ---
+  function showToast(message, type) {
+    if (!type) type = 'success';
+    var container = $('toastContainer');
+    var toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(function() {
+      toast.classList.add('removing');
+      setTimeout(function() { toast.remove(); }, 300);
+    }, 4000);
   }
-}
 
-// Show price history for a route
-async function showHistory(routeId) {
-  historyCard.style.display = 'block';
-  historyRouteSelect.value = String(routeId);
-  await loadHistory(routeId);
-}
+  // --- API helper ---
+  async function apiFetch(path, options) {
+    if (!options) options = {};
+    var headers = { 'Content-Type': 'application/json' };
+    if (options.headers) {
+      for (var key in options.headers) {
+        if (options.headers.hasOwnProperty(key)) headers[key] = options.headers[key];
+      }
+    }
+    var opts = { headers: headers };
+    if (options.method) opts.method = options.method;
+    if (options.body) opts.body = options.body;
+    var res = await fetch(API + path, opts);
+    if (!res.ok) {
+      var err;
+      try { err = await res.json(); } catch(e) { err = { error: res.statusText }; }
+      throw new Error(err.error || 'Request failed');
+    }
+    if (res.status === 204) return null;
+    return res.json();
+  }
 
-// Load and display price history
-async function loadHistory(routeId) {
-  try {
-    var history = await apiFetch('/routes/' + routeId + '/history?limit=100');
+  // --- Health check ---
+  async function checkHealth() {
+    try {
+      await apiFetch('/health');
+      statusDot.className = 'status-dot online';
+      statusText.textContent = 'Connected';
+      if (statStatus) statStatus.textContent = 'Online';
+      return true;
+    } catch(e) {
+      statusDot.className = 'status-dot offline';
+      statusText.textContent = 'Disconnected';
+      if (statStatus) statStatus.textContent = 'Offline';
+      return false;
+    }
+  }
 
-    // Build chart
-    buildPriceChart(history);
+  // --- Load routes ---
+  async function loadRoutes() {
+    try {
+      routes = await apiFetch('/routes');
+      renderRoutes();
+      updateHistorySelect();
+      updateStats();
+    } catch (err) {
+      showToast('Failed to load routes', 'error');
+    }
+  }
 
-    // Build table
-    historyTableBody.innerHTML = '';
-    if (history.length === 0) {
-      var row = document.createElement('tr');
-      var cell = document.createElement('td');
-      cell.colSpan = 4;
-      cell.textContent = 'No price history yet. Waiting for next check cycle...';
-      cell.style.textAlign = 'center';
-      cell.style.color = 'var(--text-secondary)';
-      row.appendChild(cell);
-      historyTableBody.appendChild(row);
+  // --- Update stats ---
+  function updateStats() {
+    if (statRoutes) statRoutes.textContent = String(routes.length);
+  }
+
+  // --- Update history select ---
+  function updateHistorySelect() {
+    historyRouteSelect.innerHTML = '<option value="">Select route...</option>';
+    for (var i = 0; i < routes.length; i++) {
+      var opt = document.createElement('option');
+      opt.value = String(routes[i].id);
+      opt.textContent = routes[i].origin + ' -> ' + routes[i].destination;
+      historyRouteSelect.appendChild(opt);
+    }
+  }
+
+  // --- Escape HTML (XSS safe) ---
+  function esc(str) {
+    if (!str) return '';
+    var d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  // --- Render routes ---
+  function renderRoutes() {
+    routeCount.textContent = String(routes.length);
+
+    var empty = document.querySelector('.empty-state');
+    routeListContainer.innerHTML = '';
+
+    if (routes.length === 0) {
+      if (empty) empty.style.display = '';
+      historyPanel.style.display = 'none';
       return;
     }
 
-    for (var i = 0; i < history.length; i++) {
-      var rec = history[i];
-      var row = document.createElement('tr');
-      row.innerHTML =
-        '<td>' + escapeHtml(rec.checked_at || '-') + '</td>' +
-        '<td><strong>' + rec.price + ' ' + rec.currency + '</strong></td>' +
-        '<td>' + escapeHtml(rec.airline || '-') + '</td>' +
-        '<td>' + (rec.direct ? 'Direct' : 'Transfer') + '</td>';
-      historyTableBody.appendChild(row);
+    if (empty) empty.style.display = 'none';
+
+    for (var i = 0; i < routes.length; i++) {
+      var r = routes[i];
+      var item = document.createElement('div');
+      item.className = 'route-item';
+      item.style.animationDelay = (i * 0.05) + 's';
+
+      // Build meta tags
+      var metaHtml = '';
+      metaHtml += '<span>&#9670; Max ' + esc(String(r.max_price)) + ' ' + esc(r.currency) + '</span>';
+      metaHtml += '<span>&#9670; Every ' + esc(String(r.check_interval_minutes)) + 'min</span>';
+
+      if (r.return_ticket) {
+        metaHtml += '<span><span class="route-tag route-tag-return">Round trip</span></span>';
+      }
+      if (r.include_destinations) {
+        metaHtml += '<span><span class="route-tag route-tag-inc">Allow: ' + esc(r.include_destinations) + '</span></span>';
+      }
+      if (r.exclude_destinations) {
+        metaHtml += '<span><span class="route-tag route-tag-exc">Exclude: ' + esc(r.exclude_destinations) + '</span></span>';
+      }
+
+      item.innerHTML =
+        '<div class="route-main">' +
+          '<div class="route-dest">' + esc(r.origin) + ' <span class="route-arrow">&rarr;</span> ' + esc(r.destination) + '</div>' +
+          '<div class="route-meta">' + metaHtml + '</div>' +
+        '</div>' +
+        '<div class="route-actions">' +
+          '<button class="btn btn-icon-only history-btn" data-id="' + r.id + '" aria-label="History">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>' +
+          '</button>' +
+          '<button class="btn btn-danger delete-btn" data-id="' + r.id + '">Remove</button>' +
+        '</div>';
+
+      routeListContainer.appendChild(item);
     }
-  } catch (err) {
-    showToast('Failed to load history: ' + err.message, 'error');
-  }
-}
 
-// Build price chart using Chart.js
-function buildPriceChart(history) {
-  var ctx = document.getElementById('priceChart').getContext('2d');
+    // Attach events
+    routeListContainer.querySelectorAll('.history-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        showHistory(parseInt(this.getAttribute('data-id')));
+      });
+    });
 
-  if (priceChart) {
-    priceChart.destroy();
-  }
-
-  var labels = history.map(function(r) { return r.checked_at ? r.checked_at.slice(0, 16) : ''; }).reverse();
-  var prices = history.map(function(r) { return r.price; }).reverse();
-
-  if (labels.length === 0) {
-    labels = ['No data'];
-    prices = [0];
+    routeListContainer.querySelectorAll('.delete-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        deleteRoute(parseInt(this.getAttribute('data-id')));
+      });
+    });
   }
 
-  priceChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Price (' + (history[0]?.currency || 'EUR') + ')',
-        data: prices,
-        borderColor: '#4f8cf7',
-        backgroundColor: 'rgba(79, 140, 247, 0.1)',
-        fill: true,
-        tension: 0.3,
-        pointRadius: 4,
-        pointBackgroundColor: '#4f8cf7',
-      }],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
+  // --- Add route ---
+  async function addRoute(data) {
+    submitBtn.disabled = true;
+    submitBtn.querySelector('.btn-text').textContent = 'Adding...';
+    try {
+      var route = await apiFetch('/routes', { method: 'POST', body: JSON.stringify(data) });
+      routes.push(route);
+      renderRoutes();
+      updateHistorySelect();
+      updateStats();
+      showToast('Now monitoring ' + route.origin + ' -> ' + route.destination);
+      return true;
+    } catch (err) {
+      showToast(err.message, 'error');
+      return false;
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.querySelector('.btn-text').textContent = 'Start Monitoring';
+    }
+  }
+
+  // --- Delete route ---
+  async function deleteRoute(id) {
+    try {
+      await apiFetch('/routes/' + id, { method: 'DELETE' });
+      routes = routes.filter(function(r) { return r.id !== id; });
+      renderRoutes();
+      updateHistorySelect();
+      updateStats();
+      showToast('Route removed');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // --- History ---
+  async function showHistory(routeId) {
+    historyPanel.style.display = '';
+    historyRouteSelect.value = String(routeId);
+    await loadHistory(routeId);
+    historyPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  async function loadHistory(routeId) {
+    try {
+      var history = await apiFetch('/routes/' + routeId + '/history?limit=100');
+      buildChart(history);
+      historyTableBody.innerHTML = '';
+      if (history.length === 0) {
+        var tr = document.createElement('tr');
+        var td = document.createElement('td');
+        td.colSpan = 4;
+        td.textContent = 'No history yet. Waiting for next check...';
+        td.style.textAlign = 'center';
+        td.style.color = 'var(--text-muted)';
+        tr.appendChild(td);
+        historyTableBody.appendChild(tr);
+        return;
+      }
+      for (var i = 0; i < history.length; i++) {
+        var rec = history[i];
+        var row = document.createElement('tr');
+        row.innerHTML =
+          '<td>' + esc(rec.checked_at || '-') + '</td>' +
+          '<td><strong>' + esc(String(rec.price)) + ' ' + esc(rec.currency) + '</strong></td>' +
+          '<td>' + esc(rec.airline || '-') + '</td>' +
+          '<td>' + (rec.direct ? 'Direct' : 'Transfer') + '</td>';
+        historyTableBody.appendChild(row);
+      }
+    } catch (err) {
+      showToast('Failed to load history', 'error');
+    }
+  }
+
+  function buildChart(history) {
+    var ctx = document.getElementById('priceChart').getContext('2d');
+    if (priceChart) { priceChart.destroy(); }
+
+    var labels = history.map(function(r) { return r.checked_at ? r.checked_at.slice(0, 16) : ''; }).reverse();
+    var prices = history.map(function(r) { return r.price; }).reverse();
+
+    if (labels.length === 0) {
+      labels = ['No data yet'];
+      prices = [0];
+    }
+
+    priceChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Price',
+          data: prices,
+          borderColor: '#4f8cf7',
+          backgroundColor: function(context) {
+            var chart = context.chart;
+            var ctx2 = chart.ctx;
+            var gradient = ctx2.createLinearGradient(0, 0, 0, chart.height || 260);
+            gradient.addColorStop(0, 'rgba(79, 140, 247, 0.2)');
+            gradient.addColorStop(1, 'rgba(79, 140, 247, 0.0)');
+            return gradient;
+          },
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: '#4f8cf7',
+          pointBorderColor: '#11141f',
+          pointBorderWidth: 2,
+          borderWidth: 2,
+        }],
       },
-      scales: {
-        x: {
-          ticks: { color: '#9aa0ab', maxTicksLimit: 10 },
-          grid: { color: 'rgba(46, 51, 72, 0.5)' },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            ticks: { color: '#575e75', maxTicksLimit: 8, font: { size: 11 } },
+            grid: { color: 'rgba(46, 51, 72, 0.3)' },
+          },
+          y: {
+            ticks: { color: '#575e75', font: { size: 11 } },
+            grid: { color: 'rgba(46, 51, 72, 0.3)' },
+          },
         },
-        y: {
-          ticks: { color: '#9aa0ab' },
-          grid: { color: 'rgba(46, 51, 72, 0.5)' },
+        interaction: {
+          intersect: false,
+          mode: 'index',
         },
       },
-    },
+    });
+  }
+
+  // --- Form submit ---
+  routeForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    var includeRaw = $('includeDestinations').value.trim();
+    var excludeRaw = $('excludeDestinations').value.trim();
+
+    var data = {
+      origin: $('origin').value.trim().toUpperCase(),
+      destination: $('destination').value.trim().toUpperCase(),
+      max_price: parseFloat($('maxPrice').value),
+      email: $('email').value.trim() || null,
+      discord_webhook: $('discordWebhook').value.trim() || null,
+      check_interval_minutes: parseInt($('checkInterval').value),
+      include_destinations: includeRaw || null,
+      exclude_destinations: excludeRaw || null,
+      return_ticket: $('returnTicket').checked,
+    };
+
+    var success = await addRoute(data);
+    if (success) {
+      routeForm.reset();
+      $('returnTicket').checked = false;
+    }
   });
-}
 
-// Safe HTML escaping
-function escapeHtml(str) {
-  if (!str) return '';
-  var div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-// Form submit handler
-routeForm.addEventListener('submit', async function(e) {
-  e.preventDefault();
-
-  var includeRaw = document.getElementById('includeDestinations').value.trim();
-  var excludeRaw = document.getElementById('excludeDestinations').value.trim();
-
-  var data = {
-    origin: document.getElementById('origin').value.trim().toUpperCase(),
-    destination: document.getElementById('destination').value.trim().toUpperCase(),
-    max_price: parseFloat(document.getElementById('maxPrice').value),
-    email: document.getElementById('email').value.trim() || null,
-    discord_webhook: document.getElementById('discordWebhook').value.trim() || null,
-    check_interval_minutes: parseInt(document.getElementById('checkInterval').value),
-    include_destinations: includeRaw || null,
-    exclude_destinations: excludeRaw || null,
-    return_ticket: document.getElementById('returnTicket').checked,
-  };
-
-  var success = await addRoute(data);
-  if (success) {
-    routeForm.reset();
-    document.getElementById('returnTicket').checked = false;
+  // --- Auto-uppercase IATA ---
+  function setupIataInput(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', function() {
+      this.value = this.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+    });
   }
-});
+  setupIataInput('origin');
+  setupIataInput('destination');
 
-// Auto-uppercase IATA inputs
-document.getElementById('origin').addEventListener('input', function() {
-  this.value = this.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
-});
-document.getElementById('destination').addEventListener('input', function() {
-  this.value = this.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
-});
-
-// Auto-uppercase filter inputs
-document.getElementById('includeDestinations').addEventListener('input', function() {
-  this.value = this.value.toUpperCase().replace(/[^A-Z,]/g, '');
-});
-document.getElementById('excludeDestinations').addEventListener('input', function() {
-  this.value = this.value.toUpperCase().replace(/[^A-Z,]/g, '');
-});
-
-// History route select change
-historyRouteSelect.addEventListener('change', function() {
-  if (this.value) {
-    loadHistory(parseInt(this.value));
-  } else {
-    historyCard.style.display = 'none';
+  function setupFilterInput(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', function() {
+      this.value = this.value.toUpperCase().replace(/[^A-Z, ]/g, '');
+    });
   }
-});
+  setupFilterInput('includeDestinations');
+  setupFilterInput('excludeDestinations');
 
-// Refresh history button
-refreshHistoryBtn.addEventListener('click', function() {
-  if (historyRouteSelect.value) {
-    loadHistory(parseInt(historyRouteSelect.value));
+  // --- History select change ---
+  historyRouteSelect.addEventListener('change', function() {
+    if (this.value) {
+      loadHistory(parseInt(this.value));
+    } else {
+      historyPanel.style.display = 'none';
+    }
+  });
+
+  // --- Refresh history ---
+  if (refreshHistoryBtn) {
+    refreshHistoryBtn.addEventListener('click', function() {
+      if (historyRouteSelect.value) {
+        loadHistory(parseInt(historyRouteSelect.value));
+      }
+    });
   }
-});
 
-// Initialize
-async function init() {
-  var healthy = await checkHealth();
-  if (healthy) {
-    await loadRoutes();
+  // --- Init ---
+  async function init() {
+    var healthy = await checkHealth();
+    if (healthy) {
+      await loadRoutes();
+    }
+    setInterval(checkHealth, 30000);
   }
-  setInterval(checkHealth, 30000);
-}
 
-init();
+  init();
+})();
