@@ -3,154 +3,255 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flight Sniper - Ticket Price Monitor</title>
+  <title>Flight Sniper</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-  <nav class="navbar">
-    <div class="container nav-container">
-      <div class="nav-brand">
-        <span class="brand-icon">&#9992;</span>
-        <span class="brand-text">Flight Sniper</span>
-      </div>
-      <div class="nav-status">
-        <span class="status-dot" id="statusDot"></span>
-        <span id="statusText">Checking...</span>
-      </div>
-    </div>
-  </nav>
+  <div class="app-wrapper">
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
 
-  <main class="container">
-    <!-- Hero Section -->
-    <section class="hero">
-      <h1>Monitor Flight Prices</h1>
-      <p>Set a target price for any route and get notified via email or Discord when tickets drop below your limit.</p>
-    </section>
-
-    <!-- Add Route Form -->
-    <section class="card add-route-card">
-      <h2>Add Route to Monitor</h2>
-      <form id="routeForm" class="route-form">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="origin">From (IATA code)</label>
-            <input type="text" id="origin" placeholder="VIE" maxlength="3" required>
+    <header class="navbar">
+      <div class="container nav-container">
+        <div class="nav-brand">
+          <div class="brand-icon-wrap">
+            <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+            </svg>
           </div>
-          <div class="form-group">
-            <label for="destination">To (IATA code)</label>
-            <input type="text" id="destination" placeholder="BCN" maxlength="3" required>
-          </div>
-          <div class="form-group">
-            <label for="maxPrice">Max Price (&euro;)</label>
-            <input type="number" id="maxPrice" placeholder="50" min="1" max="99999" step="1" required>
+          <span class="brand-text">Flight <span class="brand-highlight">Sniper</span></span>
+          <span class="brand-badge">BETA</span>
+        </div>
+        <div class="nav-right">
+          <div class="nav-status" id="navStatus">
+            <span class="status-dot" id="statusDot"></span>
+            <span class="status-label" id="statusText">Connecting</span>
           </div>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="email">Email (optional)</label>
-            <input type="email" id="email" placeholder="you@example.com">
+      </div>
+    </header>
+
+    <main class="container main-content">
+      <section class="stats-grid" id="statsBar">
+        <div class="stat-card stat-card-routes">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
           </div>
-          <div class="form-group">
-            <label for="discordWebhook">Discord Webhook URL (optional)</label>
-            <input type="url" id="discordWebhook" placeholder="https://discord.com/api/webhooks/...">
+          <div class="stat-info">
+            <span class="stat-value" id="statRoutes">0</span>
+            <span class="stat-label">Routes</span>
           </div>
-          <div class="form-group">
-            <label for="checkInterval">Check every (minutes)</label>
-            <select id="checkInterval">
-              <option value="30">30 minutes</option>
-              <option value="60" selected>1 hour</option>
-              <option value="120">2 hours</option>
-              <option value="360">6 hours</option>
-              <option value="720">12 hours</option>
-              <option value="1440">24 hours</option>
+        </div>
+        <div class="stat-card stat-card-alerts">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value" id="statAlerts">0</span>
+            <span class="stat-label">Alerts</span>
+          </div>
+        </div>
+        <div class="stat-card stat-card-checks">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value" id="statChecks">-</span>
+            <span class="stat-label">Last Check</span>
+          </div>
+        </div>
+        <div class="stat-card stat-card-status">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value stat-status-text" id="statStatus">Online</span>
+            <span class="stat-label">System</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel panel-form" id="addRoutePanel">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <div class="panel-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </div>
+            <h2 class="panel-title">New Monitor</h2>
+          </div>
+          <button class="panel-toggle" id="panelToggle" aria-label="Toggle panel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+        <form id="routeForm" class="route-form">
+          <div class="form-section">
+            <div class="form-row form-row-3">
+              <div class="form-field">
+                <label class="form-label" for="origin">From</label>
+                <div class="input-wrap">
+                  <input type="text" id="origin" placeholder="VIE" maxlength="3" autocomplete="off" required>
+                  <span class="input-hint">IATA code</span>
+                </div>
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="destination">To</label>
+                <div class="input-wrap">
+                  <input type="text" id="destination" placeholder="BCN" maxlength="3" autocomplete="off" required>
+                  <span class="input-hint">IATA code</span>
+                </div>
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="maxPrice">Max Price</label>
+                <div class="input-wrap input-price">
+                  <span class="input-prefix">&euro;</span>
+                  <input type="number" id="maxPrice" placeholder="50" min="1" max="99999" step="1" required>
+                </div>
+              </div>
+            </div>
+            <div class="form-row form-row-3">
+              <div class="form-field">
+                <label class="form-label" for="email">Email</label>
+                <div class="input-wrap">
+                  <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+                </div>
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="discordWebhook">Discord Webhook</label>
+                <div class="input-wrap">
+                  <input type="url" id="discordWebhook" placeholder="https://discord.com/api/webhooks/...">
+                </div>
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="checkInterval">Check Every</label>
+                <div class="input-wrap">
+                  <select id="checkInterval">
+                    <option value="30">30 min</option>
+                    <option value="60" selected>1 hour</option>
+                    <option value="120">2 hours</option>
+                    <option value="360">6 hours</option>
+                    <option value="720">12 hours</option>
+                    <option value="1440">24 hours</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="form-row form-row-3">
+              <div class="form-field">
+                <label class="form-label" for="includeDestinations">Allow only</label>
+                <div class="input-wrap">
+                  <input type="text" id="includeDestinations" placeholder="BCN, AGP, MAD">
+                  <span class="input-hint">Comma-separated IATA</span>
+                </div>
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="excludeDestinations">Exclude</label>
+                <div class="input-wrap">
+                  <input type="text" id="excludeDestinations" placeholder="LHR, CDG">
+                  <span class="input-hint">Comma-separated IATA</span>
+                </div>
+              </div>
+              <div class="form-field form-field-check">
+                <label class="toggle-label">
+                  <input type="checkbox" id="returnTicket" class="toggle-input">
+                  <span class="toggle-track">
+                    <span class="toggle-thumb"></span>
+                  </span>
+                  <span class="toggle-text">Return tickets</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+              <span class="btn-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </span>
+              <span class="btn-text">Start Monitoring</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel panel-airports">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <div class="panel-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/><path d="M2 12h20"/></svg>
+            </div>
+            <h2 class="panel-title">Nearby Airports</h2>
+          </div>
+        </div>
+        <div class="airport-grid">
+          <div class="airport-chip" data-code="VIE"><span class="chip-code">VIE</span><span class="chip-name">Vienna</span><span class="chip-dist">60km</span></div>
+          <div class="airport-chip" data-code="BUD"><span class="chip-code">BUD</span><span class="chip-name">Budapest</span><span class="chip-dist">200km</span></div>
+          <div class="airport-chip" data-code="PRG"><span class="chip-code">PRG</span><span class="chip-name">Prague</span><span class="chip-dist">330km</span></div>
+          <div class="airport-chip" data-code="BTS"><span class="chip-code">BTS</span><span class="chip-name">Bratislava</span><span class="chip-dist">Local</span></div>
+          <div class="airport-chip" data-code="KSC"><span class="chip-code">KSC</span><span class="chip-name">Kosice</span><span class="chip-dist">400km</span></div>
+          <div class="airport-chip" data-code="TAT"><span class="chip-code">TAT</span><span class="chip-name">Poprad</span><span class="chip-dist">Seasonal</span></div>
+          <div class="airport-chip" data-code="KTW"><span class="chip-code">KTW</span><span class="chip-name">Katowice</span><span class="chip-dist">280km</span></div>
+          <div class="airport-chip" data-code="KRK"><span class="chip-code">KRK</span><span class="chip-name">Krakow</span><span class="chip-dist">350km</span></div>
+        </div>
+      </section>
+
+      <section class="panel panel-routes" id="routesPanel">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <div class="panel-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+            <h2 class="panel-title">Monitored Routes</h2>
+            <span class="badge" id="routeCount">0</span>
+          </div>
+        </div>
+        <div id="routesList">
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            </div>
+            <h3 class="empty-title">No routes yet</h3>
+            <p class="empty-desc">Add your first route above to start tracking prices</p>
+          </div>
+          <div class="route-list" id="routeListContainer"></div>
+        </div>
+      </section>
+
+      <section class="panel panel-history" id="historyPanel" style="display:none;">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <div class="panel-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <h2 class="panel-title">Price History</h2>
+          </div>
+          <div class="history-controls">
+            <select id="historyRouteSelect" class="history-select">
+              <option value="">Select route...</option>
             </select>
+            <button id="refreshHistory" class="btn btn-icon-only" aria-label="Refresh">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            </button>
           </div>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="includeDestinations">Only allow destinations (comma-separated IATA)</label>
-            <input type="text" id="includeDestinations" placeholder="BCN,AGP,MAD">
-          </div>
-          <div class="form-group">
-            <label for="excludeDestinations">Exclude destinations (comma-separated IATA)</label>
-            <input type="text" id="excludeDestinations" placeholder="LHR,CDG">
-          </div>
-          <div class="form-group checkbox-group">
-            <label class="checkbox-label">
-              <input type="checkbox" id="returnTicket">
-              <span>Search return tickets too</span>
-            </label>
+        <div class="chart-card">
+          <div class="chart-container">
+            <canvas id="priceChart"></canvas>
           </div>
         </div>
-        <button type="submit" class="btn btn-primary">Start Monitoring</button>
-      </form>
-    </section>
-
-    <!-- Quick Reference -->
-    <section class="card airport-ref-card">
-      <h3>Nearby Airports (IATA codes)</h3>
-      <div class="airport-grid">
-        <div class="airport-chip"><strong>VIE</strong> Vienna</div>
-        <div class="airport-chip"><strong>BUD</strong> Budapest</div>
-        <div class="airport-chip"><strong>PRG</strong> Prague</div>
-        <div class="airport-chip"><strong>BTS</strong> Bratislava</div>
-        <div class="airport-chip"><strong>KSC</strong> Kosice</div>
-        <div class="airport-chip"><strong>TAT</strong> Poprad-Tatry</div>
-        <div class="airport-chip"><strong>KTW</strong> Katowice</div>
-        <div class="airport-chip"><strong>KRK</strong> Krakow</div>
-      </div>
-    </section>
-
-    <!-- Routes List -->
-    <section class="card routes-card">
-      <div class="section-header">
-        <h2>Monitored Routes</h2>
-        <span class="badge" id="routeCount">0</span>
-      </div>
-      <div id="routesList">
-        <div class="empty-state" id="emptyState">
-          <p>No routes being monitored yet. Add one above!</p>
+        <div class="history-table-wrap">
+          <table id="historyTable">
+            <thead><tr><th>Date</th><th>Price</th><th>Airline</th><th>Type</th></tr></thead>
+            <tbody id="historyTableBody"></tbody>
+          </table>
         </div>
-      </div>
-    </section>
+      </section>
+    </main>
 
-    <!-- Price History -->
-    <section class="card history-card" id="historyCard" style="display:none;">
-      <div class="section-header">
-        <h2>Price History</h2>
-      </div>
-      <div class="history-controls">
-        <select id="historyRouteSelect">
-          <option value="">Select a route...</option>
-        </select>
-        <button id="refreshHistory" class="btn btn-secondary">Refresh</button>
-      </div>
-      <div class="chart-container">
-        <canvas id="priceChart"></canvas>
-      </div>
-      <div id="historyTableContainer">
-        <table id="historyTable">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Price</th>
-              <th>Airline</th>
-              <th>Direct</th>
-            </tr>
-          </thead>
-          <tbody id="historyTableBody"></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-
-  <!-- Toast notification -->
-  <div id="toast" class="toast hidden"></div>
+    <div id="toastContainer" class="toast-container"></div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-
   <script src="js/app.js"></script>
 </body>
 </html>

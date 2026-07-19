@@ -98,13 +98,18 @@ app.get('/api/health', (_req, res) => {
 });
 
 // Security: Prevent path traversal in static file serving
+// In production (Vercel), static files are served by Vercel directly
 const frontendPath = path.resolve(__dirname, '../../frontend');
-app.use(express.static(frontendPath));
+const isVercel = !!process.env.VERCEL;
 
-// SPA fallback - serve index.html for any non-API route
-app.get('*', (_req, res) => {
-  res.sendFile(path.join(frontendPath, 'index.html'));
-});
+if (!isVercel) {
+  app.use(express.static(frontendPath));
+
+  // SPA fallback - serve index.html for any non-API route
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+}
 
 // Security: Global error handler - never leak stack traces in production
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
