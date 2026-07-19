@@ -2,9 +2,12 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import session from 'express-session';
 import path from 'path';
 import routesRouter from './routes/routes';
 import alertsRouter from './routes/alerts';
+import adminRouter from './routes/admin';
+import authRouter from './routes/auth';
 
 export const app = express();
 
@@ -83,16 +86,32 @@ app.use(
   })
 );
 
+// Security: Session for auth
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'flight-sniper-dev-secret-change-in-prod',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  },
+}));
+
 // Security: Limit JSON body size to 10KB
 app.use(express.json({ limit: '10kb' }));
 
 // Apply rate limiters to API routes
 app.use('/api/', globalLimiter);
 app.use('/api/routes', writeLimiter);
+app.use('/api/auth', writeLimiter);
 
 // API routes
 app.use('/api/routes', routesRouter);
 app.use('/api/alerts', alertsRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/admin', adminRouter);
 
 // Health check (not rate limited for monitoring services)
 app.get('/api/health', (_req, res) => {

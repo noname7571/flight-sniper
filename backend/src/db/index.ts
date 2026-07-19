@@ -1,3 +1,12 @@
+export interface User {
+  id: number;
+  email: string;
+  password: string;
+  name: string;
+  role: string;
+  created_at: string;
+}
+
 export interface MonitoredRoute {
   id: number;
   origin: string;
@@ -214,6 +223,60 @@ export async function getAlerts(limit: number = 50, offset: number = 0): Promise
   }
   const sqlite = await import('./sqlite');
   return sqlite.query(query, [limit, offset]);
+}
+
+// --- User functions ---
+
+export async function getUserByEmail(email: string): Promise<User | undefined> {
+  await ensureInit();
+  const adapter = getAdapter();
+  if (adapter === 'postgres') {
+    const pg = await import('./postgres');
+    return pg.get('SELECT * FROM users WHERE email = $1', [email]);
+  }
+  const sqlite = await import('./sqlite');
+  return sqlite.get('SELECT * FROM users WHERE email = ?', [email]);
+}
+
+export async function getUserById(id: number): Promise<User | undefined> {
+  await ensureInit();
+  const adapter = getAdapter();
+  if (adapter === 'postgres') {
+    const pg = await import('./postgres');
+    return pg.get('SELECT * FROM users WHERE id = $1', [id]);
+  }
+  const sqlite = await import('./sqlite');
+  return sqlite.get('SELECT * FROM users WHERE id = ?', [id]);
+}
+
+export async function createUser(data: { email: string; password: string; name: string; role: string }): Promise<User> {
+  await ensureInit();
+  const adapter = getAdapter();
+  if (adapter === 'postgres') {
+    const pg = await import('./postgres');
+    const result = await pg.query(
+      'INSERT INTO users (email, password, name, role) VALUES ($1, $2, $3, $4) RETURNING *',
+      [data.email, data.password, data.name, data.role]
+    );
+    return result[0];
+  }
+  const sqlite = await import('./sqlite');
+  const result = await sqlite.run(
+    'INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)',
+    [data.email, data.password, data.name, data.role]
+  );
+  return (await getUserById(result.lastInsertRowid))!;
+}
+
+export async function getAllUsers(): Promise<User[]> {
+  await ensureInit();
+  const adapter = getAdapter();
+  if (adapter === 'postgres') {
+    const pg = await import('./postgres');
+    return pg.query('SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC');
+  }
+  const sqlite = await import('./sqlite');
+  return sqlite.query('SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC');
 }
 
 export async function getAlertCount(): Promise<number> {

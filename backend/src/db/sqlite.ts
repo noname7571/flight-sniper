@@ -63,6 +63,15 @@ export function initSchema(): void {
       FOREIGN KEY (route_id) REFERENCES monitored_routes(id)
     );
 
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      name TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'user',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE INDEX IF NOT EXISTS idx_price_history_route_id ON price_history(route_id);
     CREATE INDEX IF NOT EXISTS idx_price_history_checked_at ON price_history(checked_at);
     CREATE INDEX IF NOT EXISTS idx_monitored_routes_active ON monitored_routes(active);

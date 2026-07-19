@@ -1,279 +1,256 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flight Sniper</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flight Sniper</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="app-wrapper">
-    <div class="bg-glow bg-glow-1"></div>
-    <div class="bg-glow bg-glow-2"></div>
+<div class="app-wrapper">
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
 
-    <header class="navbar">
-      <div class="container nav-container">
-        <div class="nav-brand">
-          <div class="brand-icon-wrap">
-            <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>
-            </svg>
-          </div>
-          <span class="brand-text">Flight <span class="brand-highlight">Sniper</span></span>
-          <span class="brand-badge">BETA</span>
-        </div>
-        <div class="nav-right">
-          <div class="nav-status" id="navStatus">
-            <span class="status-dot" id="statusDot"></span>
-            <span class="status-label" id="statusText">Connecting</span>
-          </div>
-        </div>
+<!-- ====== NAVBAR ====== -->
+<header class="navbar" id="mainNav">
+  <div class="container nav-container">
+    <a href="#/" class="nav-brand" data-nav>
+      <div class="brand-icon-wrap">
+        <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
       </div>
-    </header>
+      <span class="brand-text">Flight <span class="brand-highlight">Sniper</span></span>
+      <span class="brand-badge">BETA</span>
+    </a>
+    <div class="nav-links" id="navLinks">
+      <a href="#/" class="nav-link" data-nav>Home</a>
+      <a href="#/pricing" class="nav-link" data-nav>Pricing</a>
+      <a href="#/dashboard" class="nav-link" data-nav id="navDashboard" style="display:none">Dashboard</a>
+      <a href="#/admin" class="nav-link" data-nav id="navAdmin" style="display:none">Admin</a>
+    </div>
+    <div class="nav-right">
+      <div id="navAuth">
+        <a href="#/login" class="btn btn-sm btn-outline" data-nav>Sign In</a>
+        <a href="#/signup" class="btn btn-sm btn-primary" data-nav>Get Started</a>
+      </div>
+      <div id="navUser" style="display:none">
+        <span class="nav-user-email" id="navUserEmail"></span>
+        <button class="btn btn-sm btn-outline" id="logoutBtn">Logout</button>
+      </div>
+    </div>
+  </div>
+</header>
 
-    <main class="container main-content">
-      <section class="stats-grid" id="statsBar">
-        <div class="stat-card stat-card-routes">
-          <div class="stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          </div>
-          <div class="stat-info">
-            <span class="stat-value" id="statRoutes">0</span>
-            <span class="stat-label">Routes</span>
-          </div>
-        </div>
-        <div class="stat-card stat-card-alerts">
-          <div class="stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          </div>
-          <div class="stat-info">
-            <span class="stat-value" id="statAlerts">0</span>
-            <span class="stat-label">Alerts</span>
-          </div>
-        </div>
-        <div class="stat-card stat-card-checks">
-          <div class="stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          </div>
-          <div class="stat-info">
-            <span class="stat-value" id="statChecks">-</span>
-            <span class="stat-label">Last Check</span>
-          </div>
-        </div>
-        <div class="stat-card stat-card-status">
-          <div class="stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          </div>
-          <div class="stat-info">
-            <span class="stat-value stat-status-text" id="statStatus">Online</span>
-            <span class="stat-label">System</span>
-          </div>
-        </div>
-      </section>
+<main class="container main-content">
 
-      <section class="panel panel-form" id="addRoutePanel">
-        <div class="panel-header">
-          <div class="panel-header-left">
-            <div class="panel-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            </div>
-            <h2 class="panel-title">New Monitor</h2>
-          </div>
-          <button class="panel-toggle" id="panelToggle" aria-label="Toggle panel">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-        </div>
-        <form id="routeForm" class="route-form">
-          <div class="form-section">
-            <div class="form-row form-row-3">
-              <div class="form-field">
-                <label class="form-label" for="origin">From</label>
-                <div class="input-wrap">
-                  <input type="text" id="origin" placeholder="VIE" maxlength="3" autocomplete="off" required>
-                  <span class="input-hint">IATA code</span>
-                </div>
-              </div>
-              <div class="form-field">
-                <label class="form-label" for="destination">To</label>
-                <div class="input-wrap">
-                  <input type="text" id="destination" placeholder="BCN" maxlength="3" autocomplete="off" required>
-                  <span class="input-hint">IATA code</span>
-                </div>
-              </div>
-              <div class="form-field">
-                <label class="form-label" for="maxPrice">Max Price</label>
-                <div class="input-wrap input-price">
-                  <span class="input-prefix">&euro;</span>
-                  <input type="number" id="maxPrice" placeholder="50" min="1" max="99999" step="1" required>
-                </div>
-              </div>
-            </div>
-            <div class="form-row form-row-3">
-              <div class="form-field">
-                <label class="form-label" for="email">Email</label>
-                <div class="input-wrap">
-                  <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
-                </div>
-              </div>
-              <div class="form-field">
-                <label class="form-label" for="discordWebhook">Discord Webhook</label>
-                <div class="input-wrap">
-                  <input type="url" id="discordWebhook" placeholder="https://discord.com/api/webhooks/...">
-                </div>
-              </div>
-              <div class="form-field">
-                <label class="form-label" for="checkInterval">Check Every</label>
-                <div class="input-wrap">
-                  <select id="checkInterval">
-                    <option value="30">30 min</option>
-                    <option value="60" selected>1 hour</option>
-                    <option value="120">2 hours</option>
-                    <option value="360">6 hours</option>
-                    <option value="720">12 hours</option>
-                    <option value="1440">24 hours</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div class="form-row form-row-3">
-              <div class="form-field">
-                <label class="form-label" for="includeDestinations">Allow only</label>
-                <div class="input-wrap">
-                  <input type="text" id="includeDestinations" placeholder="BCN, AGP, MAD">
-                  <span class="input-hint">Comma-separated IATA</span>
-                </div>
-              </div>
-              <div class="form-field">
-                <label class="form-label" for="excludeDestinations">Exclude</label>
-                <div class="input-wrap">
-                  <input type="text" id="excludeDestinations" placeholder="LHR, CDG">
-                  <span class="input-hint">Comma-separated IATA</span>
-                </div>
-              </div>
-              <div class="form-field form-field-check">
-                <label class="toggle-label">
-                  <input type="checkbox" id="returnTicket" class="toggle-input">
-                  <span class="toggle-track">
-                    <span class="toggle-thumb"></span>
-                  </span>
-                  <span class="toggle-text">Return tickets</span>
-                </label>
-              </div>
-            </div>
-          </div>
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary" id="submitBtn">
-              <span class="btn-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              </span>
-              <span class="btn-text">Start Monitoring</span>
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <section class="panel panel-airports">
-        <div class="panel-header">
-          <div class="panel-header-left">
-            <div class="panel-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/><path d="M2 12h20"/></svg>
-            </div>
-            <h2 class="panel-title">Nearby Airports</h2>
-          </div>
-        </div>
-        <div class="airport-grid">
-          <div class="airport-chip" data-code="VIE"><span class="chip-code">VIE</span><span class="chip-name">Vienna</span><span class="chip-dist">60km</span></div>
-          <div class="airport-chip" data-code="BUD"><span class="chip-code">BUD</span><span class="chip-name">Budapest</span><span class="chip-dist">200km</span></div>
-          <div class="airport-chip" data-code="PRG"><span class="chip-code">PRG</span><span class="chip-name">Prague</span><span class="chip-dist">330km</span></div>
-          <div class="airport-chip" data-code="BTS"><span class="chip-code">BTS</span><span class="chip-name">Bratislava</span><span class="chip-dist">Local</span></div>
-          <div class="airport-chip" data-code="KSC"><span class="chip-code">KSC</span><span class="chip-name">Kosice</span><span class="chip-dist">400km</span></div>
-          <div class="airport-chip" data-code="TAT"><span class="chip-code">TAT</span><span class="chip-name">Poprad</span><span class="chip-dist">Seasonal</span></div>
-          <div class="airport-chip" data-code="KTW"><span class="chip-code">KTW</span><span class="chip-name">Katowice</span><span class="chip-dist">280km</span></div>
-          <div class="airport-chip" data-code="KRK"><span class="chip-code">KRK</span><span class="chip-name">Krakow</span><span class="chip-dist">350km</span></div>
-        </div>
-      </section>
-
-      <section class="panel panel-alerts" id="alertsPanel">
-        <div class="panel-header">
-          <div class="panel-header-left">
-            <div class="panel-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            </div>
-            <h2 class="panel-title">Alert History</h2>
-            <span class="badge" id="alertCount">0</span>
-          </div>
-        </div>
-        <div id="alertsList">
-          <div class="empty-state" id="alertsEmpty">
-            <div class="empty-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
-            </div>
-            <h3 class="empty-title">No alerts yet</h3>
-            <p class="empty-desc">Alerts will appear here when a price drops below your threshold</p>
-          </div>
-          <div class="alert-list" id="alertListContainer"></div>
-        </div>
-      </section>
-
-      <section class="panel panel-routes" id="routesPanel">
-        <div class="panel-header">
-          <div class="panel-header-left">
-            <div class="panel-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-            </div>
-            <h2 class="panel-title">Monitored Routes</h2>
-            <span class="badge" id="routeCount">0</span>
-          </div>
-        </div>
-        <div id="routesList">
-          <div class="empty-state" id="emptyState">
-            <div class="empty-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-            </div>
-            <h3 class="empty-title">No routes yet</h3>
-            <p class="empty-desc">Add your first route above to start tracking prices</p>
-          </div>
-          <div class="route-list" id="routeListContainer"></div>
-        </div>
-      </section>
-
-      <section class="panel panel-history" id="historyPanel" style="display:none;">
-        <div class="panel-header">
-          <div class="panel-header-left">
-            <div class="panel-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            </div>
-            <h2 class="panel-title">Price History</h2>
-          </div>
-          <div class="history-controls">
-            <select id="historyRouteSelect" class="history-select">
-              <option value="">Select route...</option>
-            </select>
-            <button id="refreshHistory" class="btn btn-icon-only" aria-label="Refresh">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-            </button>
-          </div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-container">
-            <canvas id="priceChart"></canvas>
-          </div>
-        </div>
-        <div class="history-table-wrap">
-          <table id="historyTable">
-            <thead><tr><th>Date</th><th>Price</th><th>Airline</th><th>Type</th></tr></thead>
-            <tbody id="historyTableBody"></tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-
-    <div id="toastContainer" class="toast-container"></div>
+<!-- ====== PAGE: LANDING ====== -->
+<section class="page" id="page-home">
+  <div class="hero">
+    <div class="hero-badge">Flight Price Tracking</div>
+    <h1 class="hero-title">Never overpay<br>for flights again</h1>
+    <p class="hero-sub">Monitor flight prices from airports across Central Europe. Get notified via email or Discord when prices drop below your target.</p>
+    <div class="hero-actions">
+      <a href="#/signup" class="btn btn-primary btn-lg" data-nav>Start Free</a>
+      <a href="#/dashboard" class="btn btn-outline btn-lg" data-nav>View Dashboard</a>
+    </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-  <script src="js/app.js"></script>
+  <div class="section-label">Supported Airports</div>
+  <div class="airport-grid-wide">
+    <div class="airport-card"><span class="a-code">VIE</span><span class="a-name">Vienna</span><span class="a-dist">60km</span></div>
+    <div class="airport-card"><span class="a-code">BUD</span><span class="a-name">Budapest</span><span class="a-dist">200km</span></div>
+    <div class="airport-card"><span class="a-code">PRG</span><span class="a-name">Prague</span><span class="a-dist">330km</span></div>
+    <div class="airport-card"><span class="a-code">BTS</span><span class="a-name">Bratislava</span><span class="a-dist">Local</span></div>
+    <div class="airport-card"><span class="a-code">KSC</span><span class="a-name">Kosice</span><span class="a-dist">400km</span></div>
+    <div class="airport-card"><span class="a-code">KTW</span><span class="a-name">Katowice</span><span class="a-dist">280km</span></div>
+    <div class="airport-card"><span class="a-code">KRK</span><span class="a-name">Krakow</span><span class="a-dist">350km</span></div>
+  </div>
+
+  <div class="section-label">How It Works</div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+      <h3>Set Your Route</h3>
+      <p>Choose departure and destination airports, set your maximum price, and configure notification channels.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <h3>Automatic Monitoring</h3>
+      <p>We check prices every hour around the clock against Google Flights data. No manual checking needed.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+      <h3>Instant Alerts</h3>
+      <p>Get notified via email or Discord the moment a ticket price drops below your target threshold.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <h3>Price History</h3>
+      <p>Track price trends over time with interactive charts. Know the best time to book.</p>
+    </div>
+  </div>
+
+  <div class="section-label" id="landing-pricing">Simple Pricing</div>
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <h3>Free</h3>
+      <div class="pricing-price">$0<span class="pricing-period">/mo</span></div>
+      <ul class="pricing-features">
+        <li>1 monitored route</li>
+        <li>Daily price checks</li>
+        <li>Email notifications</li>
+        <li>Price history (7 days)</li>
+      </ul>
+      <a href="#/signup" class="btn btn-outline btn-full" data-nav>Get Started</a>
+    </div>
+    <div class="pricing-card pricing-featured">
+      <div class="pricing-badge">Popular</div>
+      <h3>Starter</h3>
+      <div class="pricing-price">$4<span class="pricing-period">/mo</span></div>
+      <ul class="pricing-features">
+        <li>10 monitored routes</li>
+        <li>Hourly price checks</li>
+        <li>Email + Discord alerts</li>
+        <li>Price history (90 days)</li>
+        <li>Include/exclude filters</li>
+        <li>Return ticket monitoring</li>
+      </ul>
+      <a href="#/signup" class="btn btn-primary btn-full" data-nav>Coming Soon</a>
+    </div>
+    <div class="pricing-card">
+      <h3>Pro</h3>
+      <div class="pricing-price">$8<span class="pricing-period">/mo</span></div>
+      <ul class="pricing-features">
+        <li>Unlimited routes</li>
+        <li>15-min price checks</li>
+        <li>Email + Discord + SMS</li>
+        <li>Unlimited price history</li>
+        <li>Advanced filters</li>
+        <li>Multi-airport monitoring</li>
+        <li>Priority support</li>
+      </ul>
+      <a href="#/signup" class="btn btn-outline btn-full" data-nav>Coming Soon</a>
+    </div>
+  </div>
+</section>
+
+<!-- ====== PAGE: LOGIN ====== -->
+<section class="page" id="page-login" style="display:none">
+  <div class="auth-container">
+    <div class="auth-card">
+      <h2>Sign In</h2>
+      <p class="auth-desc">Access your flight monitoring dashboard</p>
+      <form id="loginForm">
+        <div class="form-field">
+          <label class="form-label">Email</label>
+          <div class="input-wrap"><input type="email" id="loginEmail" placeholder="you@example.com" required></div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Password</label>
+          <div class="input-wrap"><input type="password" id="loginPassword" placeholder="Enter your password" required></div>
+        </div>
+        <div class="auth-error" id="loginError"></div>
+        <button type="submit" class="btn btn-primary btn-full" id="loginBtn">Sign In</button>
+      </form>
+      <p class="auth-footer">Don't have an account? <a href="#/signup" data-nav>Sign up</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- ====== PAGE: SIGNUP ====== -->
+<section class="page" id="page-signup" style="display:none">
+  <div class="auth-container">
+    <div class="auth-card">
+      <h2>Create Account</h2>
+      <p class="auth-desc">Start monitoring flight prices in minutes</p>
+      <form id="signupForm">
+        <div class="form-field">
+          <label class="form-label">Name</label>
+          <div class="input-wrap"><input type="text" id="signupName" placeholder="Your name" required></div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Email</label>
+          <div class="input-wrap"><input type="email" id="signupEmail" placeholder="you@example.com" required></div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Password</label>
+          <div class="input-wrap"><input type="password" id="signupPassword" placeholder="Min 8 characters" minlength="8" required></div>
+        </div>
+        <div class="auth-error" id="signupError"></div>
+        <button type="submit" class="btn btn-primary btn-full" id="signupBtn">Create Account</button>
+      </form>
+      <p class="auth-footer">Already have an account? <a href="#/login" data-nav>Sign in</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- ====== PAGE: DASHBOARD ====== -->
+<section class="page" id="page-dashboard" style="display:none">
+  <div class="dashboard-content" id="dashboardContent"></div>
+</section>
+
+<!-- ====== PAGE: ADMIN ====== -->
+<section class="page" id="page-admin" style="display:none">
+  <div class="admin-header"><h2>Admin Panel</h2></div>
+  <div class="admin-stats" id="adminStats"></div>
+  <div class="panel"><div class="panel-header"><h3>Users</h3></div><div id="adminUsersList"></div></div>
+</section>
+
+<!-- ====== PAGE: PRICING ====== -->
+<section class="page" id="page-pricing" style="display:none">
+  <div class="hero hero-sm">
+    <h1 class="hero-title">Pricing</h1>
+    <p class="hero-sub">Start free, upgrade when you need more routes and features.</p>
+  </div>
+  <div class="pricing-grid">
+    <div class="pricing-card"><h3>Free</h3><div class="pricing-price">$0<span class="pricing-period">/mo</span></div><ul class="pricing-features"><li>1 monitored route</li><li>Daily price checks</li><li>Email notifications</li><li>7-day price history</li></ul><a href="#/signup" class="btn btn-outline btn-full" data-nav>Get Started</a></div>
+    <div class="pricing-card pricing-featured"><div class="pricing-badge">Popular</div><h3>Starter</h3><div class="pricing-price">$4<span class="pricing-period">/mo</span></div><ul class="pricing-features"><li>10 routes</li><li>Hourly checks</li><li>Email + Discord</li><li>90-day history</li><li>Filters</li><li>Return trips</li></ul><a href="#/signup" class="btn btn-primary btn-full" data-nav>Coming Soon</a></div>
+    <div class="pricing-card"><h3>Pro</h3><div class="pricing-price">$8<span class="pricing-period">/mo</span></div><ul class="pricing-features"><li>Unlimited routes</li><li>15-min checks</li><li>Email + Discord + SMS</li><li>Unlimited history</li><li>Multi-airport</li><li>Priority support</li></ul><a href="#/signup" class="btn btn-outline btn-full" data-nav>Coming Soon</a></div>
+  </div>
+</section>
+
+<!-- ====== PAGE: TERMS ====== -->
+<section class="page" id="page-terms" style="display:none">
+  <div class="legal-page">
+    <h1>Terms & Conditions</h1>
+    <p class="legal-date">Last updated: July 2026</p>
+    <h3>1. Service Description</h3>
+    <p>Flight Sniper monitors flight ticket prices from public data sources and notifies users when prices meet their defined criteria. We do not sell tickets or process payments.</p>
+    <h3>2. Data Sources</h3>
+    <p>Price data is obtained through third-party APIs and publicly available sources. Prices may not reflect real-time availability and should be verified with the airline before purchase.</p>
+    <h3>3. User Accounts</h3>
+    <p>Users are responsible for maintaining the confidentiality of their account credentials. You may not share your account with others.</p>
+    <h3>4. Limitation of Liability</h3>
+    <p>Flight Sniper is provided "as is" without any warranty. We are not responsible for incorrect prices, missed deals, or any financial losses resulting from the use of this service.</p>
+    <h3>5. Third-Party Services</h3>
+    <p>This service uses SerpApi for flight data and Discord/email for notifications. These services have their own terms and privacy policies.</p>
+    <h3>6. Changes</h3>
+    <p>We reserve the right to modify these terms at any time. Users will be notified of material changes via email.</p>
+    <h3>7. Contact</h3>
+    <p>For questions, reach out via the contact information provided on this site.</p>
+  </div>
+</section>
+
+</main>
+
+<!-- ====== FOOTER ====== -->
+<footer class="footer">
+  <div class="container footer-content">
+    <div class="footer-links">
+      <a href="#/" data-nav>Home</a>
+      <a href="#/pricing" data-nav>Pricing</a>
+      <a href="#/terms" data-nav>Terms</a>
+    </div>
+    <p class="footer-text">Flight Sniper &mdash; Flight price monitoring for Central Europe</p>
+  </div>
+</footer>
+
+<!-- Toast -->
+<div id="toastContainer" class="toast-container"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
