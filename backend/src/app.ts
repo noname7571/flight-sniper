@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import routesRouter from './routes/routes';
+import alertsRouter from './routes/alerts';
 
 export const app = express();
 
@@ -91,6 +92,7 @@ app.use('/api/routes', writeLimiter);
 
 // API routes
 app.use('/api/routes', routesRouter);
+app.use('/api/alerts', alertsRouter);
 
 // Health check (not rate limited for monitoring services)
 app.get('/api/health', (_req, res) => {

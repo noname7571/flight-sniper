@@ -20,6 +20,10 @@
   const panelToggle = $('panelToggle');
   const addRoutePanel = $('addRoutePanel');
   const submitBtn = $('submitBtn');
+  const alertsPanel = $('alertsPanel');
+  const alertListContainer = $('alertListContainer');
+  const alertCountBadge = $('alertCount');
+  const alertsEmpty = $('alertsEmpty');
 
   // --- Stats elements ---
   var statRoutes = $('statRoutes');
@@ -392,11 +396,54 @@
     });
   }
 
+  // --- Alert History ---
+  async function loadAlerts() {
+    try {
+      var data = await apiFetch('/alerts');
+      var countData = await apiFetch('/alerts/count');
+      var count = countData.count || 0;
+
+      if (alertCountBadge) alertCountBadge.textContent = String(count);
+      if (statAlerts) statAlerts.textContent = String(count);
+
+      if (!alertListContainer) return;
+
+      alertListContainer.innerHTML = '';
+      if (alertsEmpty) alertsEmpty.style.display = data.length === 0 ? '' : 'none';
+
+      for (var i = 0; i < data.length; i++) {
+        var a = data[i];
+        var item = document.createElement('div');
+        item.className = 'alert-item';
+        item.style.animationDelay = (i * 0.05) + 's';
+
+        var channelClass = 'alert-channel-' + (a.channel || 'unknown');
+        var channelLabel = a.channel === 'discord' ? 'Discord' : a.channel === 'email' ? 'Email' : a.channel;
+
+        item.innerHTML =
+          '<div class="alert-main">' +
+            '<div class="alert-route">' + esc(a.route_origin || '?') + ' <span class="route-arrow">&rarr;</span> ' + esc(a.route_destination || '?') + '</div>' +
+            '<div class="alert-meta">' +
+              '<span class="alert-price">' + esc(String(a.price)) + ' &euro;</span>' +
+              '<span class="alert-threshold">Under ' + esc(String(a.max_price)) + ' &euro;</span>' +
+              '<span class="alert-time">' + esc(a.sent_at ? a.sent_at.slice(0, 16) : '') + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<span class="alert-channel ' + channelClass + '">' + channelLabel + '</span>';
+
+        alertListContainer.appendChild(item);
+      }
+    } catch (err) {
+      console.error('Failed to load alerts:', err);
+    }
+  }
+
   // --- Init ---
   async function init() {
     var healthy = await checkHealth();
     if (healthy) {
       await loadRoutes();
+      await loadAlerts();
     }
     setInterval(checkHealth, 30000);
   }
