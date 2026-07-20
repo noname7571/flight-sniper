@@ -1,405 +1,247 @@
-(function() {
-  'use strict';
+(function(){'use strict';
+const A='/api';let user=null,routes=[],priceChart=null;
+const $=function(id){return document.getElementById(id)};
 
-  const API = '/api';
-  let routes = [];
-  let priceChart = null;
+// --- Session & Auth ---
+async function checkSession(){
+  try{
+    const res=await fetch(A+'/auth/me',{credentials:'include'});
+    if(!res.ok){user=null;return false;}
+    user=await res.json();return true;
+  }catch(e){user=null;return false;}
+}
 
-  // --- DOM refs ---
-  const $ = function(id) { return document.getElementById(id); };
-  const routeForm = $('routeForm');
-  const routesList = $('routesList');
-  const routeListContainer = $('routeListContainer');
-  const routeCount = $('routeCount');
-  const statusDot = $('statusDot');
-  const statusText = $('statusText');
-  const historyPanel = $('historyPanel');
-  const historyRouteSelect = $('historyRouteSelect');
-  const historyTableBody = $('historyTableBody');
-  const refreshHistoryBtn = $('refreshHistory');
-  const panelToggle = $('panelToggle');
-  const addRoutePanel = $('addRoutePanel');
-  const submitBtn = $('submitBtn');
+async function showToast(m,t){if(!t)t='success';
+  const c=$('toastContainer'),o=document.createElement('div');
+  o.className='toast '+t;o.textContent=m;c.appendChild(o);
+  setTimeout(function(){o.classList.add('removing');setTimeout(function(){o.remove()},300)},4000);
+}
 
-  // --- Stats elements ---
-  var statRoutes = $('statRoutes');
-  var statAlerts = $('statAlerts');
-  var statChecks = $('statChecks');
-  var statStatus = $('statStatus');
+async function apiFetch(p,o){
+  if(!o)o={};var h={'Content-Type':'application/json'};
+  if(o.headers){for(var k in o.headers)if(o.headers.hasOwnProperty(k))h[k]=o.headers[k];}
+  var opts={headers:h,credentials:'include'};
+  if(o.method)opts.method=o.method;if(o.body)opts.body=o.body;
+  var res=await fetch(A+p,opts);
+  if(!res.ok){var e;try{e=await res.json()}catch(ex){e={error:res.statusText}}throw new Error(e.error||'Request failed');}
+  if(res.status===204)return null;return res.json();
+}
 
-  // --- Panel toggle ---
-  var formCollapsed = false;
-  if (panelToggle) {
-    panelToggle.addEventListener('click', function() {
-      formCollapsed = !formCollapsed;
-      var routeFormEl = document.querySelector('.route-form');
-      if (routeFormEl) {
-        routeFormEl.style.display = formCollapsed ? 'none' : '';
-      }
-      panelToggle.classList.toggle('collapsed', formCollapsed);
+function esc(s){if(!s)return '';var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+// --- Routing ---
+function navigate(){
+  var hash=window.location.hash||'#/';
+  var pages=document.querySelectorAll('.page');
+  pages.forEach(function(p){p.style.display='none'});
+  var target=document.getElementById('page-'+hash.replace('#/','').replace('/',''));
+  if(!target)navigateTo('home');
+  else target.style.display='';
+  updateNav();
+}
+
+function navigateTo(hash){window.location.hash='#/'+hash;}
+
+document.querySelectorAll('[data-nav]').forEach(function(el){
+  el.addEventListener('click',function(e){
+    var href=this.getAttribute('href');
+    if(href&&href.startsWith('#/')){navigateTo(href.replace('#/',''));e.preventDefault();}
+  });
+});
+
+window.addEventListener('hashchange',navigate);
+
+// --- Navbar update ---
+function updateNav(){
+  var hash=window.location.hash||'#/';
+  var isAuth=!!user;
+  $('navAuth').style.display=isAuth?'none':'';
+  $('navUser').style.display=isAuth?'':'none';
+  if(isAuth&&user)$('navUserEmail').textContent=user.email||user.name;
+  $('navDashboard').style.display=isAuth?'':'none';
+  $('navAdmin').style.display=(isAuth&&user&&user.role==='admin')?'':'none';
+}
+
+// --- Auth handlers ---
+$('loginForm').addEventListener('submit',async function(e){
+  e.preventDefault();var btn=$('loginBtn');btn.disabled=true;btn.textContent='Signing in...';
+  $('loginError').textContent='';
+  try{
+    var res=await fetch(A+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({email:$('loginEmail').value,password:$('loginPassword').value})});
+    if(!res.ok){var d=await res.json();throw new Error(d.error||'Login failed');}
+    user=await res.json();showToast('Signed in as '+user.email);navigateTo('dashboard');
+  }catch(e){$('loginError').textContent=e.message;}
+  finally{btn.disabled=false;btn.textContent='Sign In';}
+});
+
+$('signupForm').addEventListener('submit',async function(e){
+  e.preventDefault();var btn=$('signupBtn');btn.disabled=true;btn.textContent='Creating account...';
+  $('signupError').textContent='';
+  try{
+    var res=await fetch(A+'/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({name:$('signupName').value,email:$('signupEmail').value,password:$('signupPassword').value})});
+    if(!res.ok){var d=await res.json();throw new Error(d.error||'Registration failed');}
+    user=await res.json();showToast('Account created! Welcome '+user.name);navigateTo('dashboard');
+  }catch(e){$('signupError').textContent=e.message;}
+  finally{btn.disabled=false;btn.textContent='Create Account';}
+});
+
+$('logoutBtn').addEventListener('click',async function(){
+  await fetch(A+'/auth/logout',{method:'POST',credentials:'include'});
+  user=null;showToast('Signed out');navigateTo('home');
+});
+
+// --- Dashboard content ---
+function renderDashboard(){
+  var d=$('dashboardContent');
+  d.innerHTML=`<div class="stats-grid" id="dashStats">
+    <div class="stat-card sc-routes"><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div class="stat-info"><span class="stat-value" id="statRoutes">0</span><span class="stat-label">Routes</span></div></div>
+    <div class="stat-card sc-alerts"><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div><div class="stat-info"><span class="stat-value" id="statAlerts">0</span><span class="stat-label">Alerts</span></div></div>
+    <div class="stat-card sc-checks"><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="stat-info"><span class="stat-value" id="statChecks">-</span><span class="stat-label">Last Check</span></div></div>
+    <div class="stat-card sc-status"><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="stat-info"><span class="stat-value stat-status-text" id="statStatus">Online</span><span class="stat-label">System</span></div></div>
+  </div>
+  <div class="panel" id="addRoutePanel"><div class="panel-header"><div class="panel-header-left"><div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><h2 class="panel-title">New Monitor</h2></div><button class="panel-toggle" id="panelToggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button></div>
+    <form id="dashRouteForm" class="route-form">
+      <div class="form-section">
+        <div class="form-row form-row-3">
+          <div class="form-field"><label class="form-label">From</label><div class="input-wrap"><input type="text" id="dOrigin" placeholder="VIE" maxlength="3" required></div></div>
+          <div class="form-field"><label class="form-label">To</label><div class="input-wrap"><input type="text" id="dDest" placeholder="BCN" maxlength="3" required></div></div>
+          <div class="form-field"><label class="form-label">Max Price</label><div class="input-wrap input-price"><span class="input-prefix">&euro;</span><input type="number" id="dMaxPrice" placeholder="50" min="1" step="1" required></div></div>
+        </div>
+        <div class="form-row form-row-3">
+          <div class="form-field"><label class="form-label">Email</label><div class="input-wrap"><input type="email" id="dEmail" placeholder="you@example.com"></div></div>
+          <div class="form-field"><label class="form-label">Discord Webhook</label><div class="input-wrap"><input type="url" id="dWebhook" placeholder="https://discord.com/api/webhooks/..."></div></div>
+          <div class="form-field"><label class="form-label">Check Every</label><div class="input-wrap"><select id="dInterval"><option value="30">30 min</option><option value="60" selected>1 hour</option><option value="120">2 hours</option><option value="360">6 hours</option><option value="720">12 hours</option><option value="1440">24 hours</option></select></div></div>
+        </div>
+        <div class="form-row form-row-3">
+          <div class="form-field"><label class="form-label">Allow only</label><div class="input-wrap"><input type="text" id="dInclude" placeholder="BCN, AGP, MAD"></div></div>
+          <div class="form-field"><label class="form-label">Exclude</label><div class="input-wrap"><input type="text" id="dExclude" placeholder="LHR, CDG"></div></div>
+          <div class="form-field form-field-check"><label class="toggle-label"><input type="checkbox" id="dReturn" class="toggle-input"><span class="toggle-track"><span class="toggle-thumb"></span></span><span class="toggle-text">Return tickets</span></label></div>
+        </div>
+      </div>
+      <div class="form-actions"><button type="submit" class="btn btn-primary" id="dashSubmit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start Monitoring</button></div>
+    </form>
+  </div>
+  <div class="panel"><div class="panel-header"><div class="panel-header-left"><div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/><path d="M2 12h20"/></svg></div><h2 class="panel-title">Nearby Airports</h2></div></div>
+    <div class="airport-grid"><div class="airport-chip"><span class="chip-code">VIE</span><span class="chip-name">Vienna</span><span class="chip-dist">60km</span></div><div class="airport-chip"><span class="chip-code">BUD</span><span class="chip-name">Budapest</span><span class="chip-dist">200km</span></div><div class="airport-chip"><span class="chip-code">PRG</span><span class="chip-name">Prague</span><span class="chip-dist">330km</span></div><div class="airport-chip"><span class="chip-code">BTS</span><span class="chip-name">Bratislava</span><span class="chip-dist">Local</span></div><div class="airport-chip"><span class="chip-code">KSC</span><span class="chip-name">Kosice</span><span class="chip-dist">400km</span></div><div class="airport-chip"><span class="chip-code">TAT</span><span class="chip-name">Poprad</span><span class="chip-dist">Seasonal</span></div><div class="airport-chip"><span class="chip-code">KTW</span><span class="chip-name">Katowice</span><span class="chip-dist">280km</span></div><div class="airport-chip"><span class="chip-code">KRK</span><span class="chip-name">Krakow</span><span class="chip-dist">350km</span></div></div>
+  </div>
+  <div class="panel" id="routesPanel"><div class="panel-header"><div class="panel-header-left"><div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><h2 class="panel-title">Monitored Routes</h2><span class="badge" id="dashRouteCount">0</span></div></div>
+    <div id="dashRoutesList"><div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></div><h3 class="empty-title">No routes yet</h3><p class="empty-desc">Add your first route above</p></div></div>
+  </div>
+  <div class="panel" id="dashAlertsPanel"><div class="panel-header"><div class="panel-header-left"><div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div><h2 class="panel-title">Alert History</h2><span class="badge" id="dashAlertCount">0</span></div></div>
+    <div id="dashAlertList"><div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div><h3 class="empty-title">No alerts yet</h3></div></div>
+  </div>`;
+  
+  // Attach dashboard events
+  initDashboard();
+}
+
+function initDashboard(){
+  var f=$('dashRouteForm');if(!f)return;
+  f.addEventListener('submit',async function(e){
+    e.preventDefault();var btn=$('dashSubmit');btn.disabled=true;
+    try{
+      var d={origin:$('dOrigin').value.trim().toUpperCase(),destination:$('dDest').value.trim().toUpperCase(),max_price:parseFloat($('dMaxPrice').value),email:$('dEmail').value.trim()||null,discord_webhook:$('dWebhook').value.trim()||null,check_interval_minutes:parseInt($('dInterval').value),include_destinations:$('dInclude').value.trim()||null,exclude_destinations:$('dExclude').value.trim()||null,return_ticket:$('dReturn').checked};
+      var r=await apiFetch('/routes',{method:'POST',body:JSON.stringify(d)});
+      routes.push(r);renderDashRoutes();showToast('Now monitoring '+r.origin+' -> '+r.destination);f.reset();$('dReturn').checked=false;
+    }catch(e){showToast(e.message,'error')}finally{btn.disabled=false;}
+  });
+  
+  // IATA auto-uppercase
+  ['dOrigin','dDest'].forEach(function(id){var el=$(id);if(!el)return;el.addEventListener('input',function(){this.value=this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3)});});
+  ['dInclude','dExclude'].forEach(function(id){var el=$(id);if(!el)return;el.addEventListener('input',function(){this.value=this.value.toUpperCase().replace(/[^A-Z, ]/g,'')});});
+  
+  loadDashData();
+}
+
+async function loadDashData(){
+  try{routes=await apiFetch('/routes');}catch(e){routes=[];}
+  renderDashRoutes();
+  try{var c=await apiFetch('/alerts/count');if($('statAlerts'))$('statAlerts').textContent=String(c.count||0);if($('dashAlertCount'))$('dashAlertCount').textContent=String(c.count||0);}catch(e){}
+  try{var a=await apiFetch('/alerts');renderDashAlerts(a);}catch(e){}
+  if($('statRoutes'))$('statRoutes').textContent=String(routes.length);
+  
+  // Health check
+  try{await apiFetch('/health');if($('statStatus'))$('statStatus').textContent='Online';}catch(e){if($('statStatus'))$('statStatus').textContent='Offline';}
+}
+
+function renderDashRoutes(){
+  var c=$('dashRouteCount');if(c)c.textContent=String(routes.length);
+  var l=$('dashRoutesList');if(!l)return;
+  l.innerHTML='';
+  if(routes.length===0){l.innerHTML='<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></div><h3 class="empty-title">No routes yet</h3><p class="empty-desc">Add your first route above</p></div>';return;}
+  for(var i=0;i<routes.length;i++){
+    var r=routes[i],div=document.createElement('div');div.className='route-item';
+    var h='<div class="route-main"><div class="route-dest">'+esc(r.origin)+' <span class="route-arrow">&rarr;</span> '+esc(r.destination)+'</div><div class="route-meta"><span>&#9670; Max '+esc(String(r.max_price))+' '+esc(r.currency)+'</span><span>&#9670; Every '+esc(String(r.check_interval_minutes))+'min</span>';
+    if(r.return_ticket)h+='<span><span class="route-tag route-tag-return">Round trip</span></span>';
+    if(r.include_destinations)h+='<span><span class="route-tag route-tag-inc">Allow: '+esc(r.include_destinations)+'</span></span>';
+    if(r.exclude_destinations)h+='<span><span class="route-tag route-tag-exc">Exclude: '+esc(r.exclude_destinations)+'</span></span>';
+    h+='</div></div><div class="route-actions"><button class="btn btn-danger del-route" data-id="'+r.id+'">Remove</button></div>';
+    div.innerHTML=h;l.appendChild(div);
+  }
+  l.querySelectorAll('.del-route').forEach(function(b){
+    b.addEventListener('click',async function(){
+      var id=parseInt(this.getAttribute('data-id'));
+      try{await apiFetch('/routes/'+id,{method:'DELETE'});routes=routes.filter(function(rr){return rr.id!==id});renderDashRoutes();showToast('Route removed');}catch(e){showToast(e.message,'error');}
     });
+  });
+}
+
+function renderDashAlerts(data){
+  var l=$('dashAlertList');if(!l)return;
+  l.innerHTML='';
+  if(!data||data.length===0){l.innerHTML='<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div><h3 class="empty-title">No alerts yet</h3></div>';return;}
+  for(var i=0;i<data.length;i++){
+    var a=data[i],div=document.createElement('div');div.className='alert-item';
+    var cl=a.channel==='discord'?'alert-channel-discord':'alert-channel-email';
+    var lb=a.channel==='discord'?'Discord':'Email';
+    div.innerHTML='<div class="alert-main"><div class="alert-route">'+esc(a.route_origin||'?')+' <span class="route-arrow">&rarr;</span> '+esc(a.route_destination||'?')+'</div><div class="alert-meta"><span class="alert-price">'+esc(String(a.price))+' &euro;</span><span class="alert-threshold">Under '+esc(String(a.max_price))+'</span><span class="alert-time">'+esc(a.sent_at?a.sent_at.slice(0,16):'')+'</span></div></div><span class="alert-channel '+cl+'">'+lb+'</span>';
+    l.appendChild(div);
   }
+}
 
-  // --- Toast system ---
-  function showToast(message, type) {
-    if (!type) type = 'success';
-    var container = $('toastContainer');
-    var toast = document.createElement('div');
-    toast.className = 'toast ' + type;
-    toast.textContent = message;
-    container.appendChild(toast);
-    setTimeout(function() {
-      toast.classList.add('removing');
-      setTimeout(function() { toast.remove(); }, 300);
-    }, 4000);
-  }
-
-  // --- API helper ---
-  async function apiFetch(path, options) {
-    if (!options) options = {};
-    var headers = { 'Content-Type': 'application/json' };
-    if (options.headers) {
-      for (var key in options.headers) {
-        if (options.headers.hasOwnProperty(key)) headers[key] = options.headers[key];
-      }
-    }
-    var opts = { headers: headers };
-    if (options.method) opts.method = options.method;
-    if (options.body) opts.body = options.body;
-    var res = await fetch(API + path, opts);
-    if (!res.ok) {
-      var err;
-      try { err = await res.json(); } catch(e) { err = { error: res.statusText }; }
-      throw new Error(err.error || 'Request failed');
-    }
-    if (res.status === 204) return null;
-    return res.json();
-  }
-
-  // --- Health check ---
-  async function checkHealth() {
-    try {
-      await apiFetch('/health');
-      statusDot.className = 'status-dot online';
-      statusText.textContent = 'Connected';
-      if (statStatus) statStatus.textContent = 'Online';
-      return true;
-    } catch(e) {
-      statusDot.className = 'status-dot offline';
-      statusText.textContent = 'Disconnected';
-      if (statStatus) statStatus.textContent = 'Offline';
-      return false;
-    }
-  }
-
-  // --- Load routes ---
-  async function loadRoutes() {
-    try {
-      routes = await apiFetch('/routes');
-      renderRoutes();
-      updateHistorySelect();
-      updateStats();
-    } catch (err) {
-      showToast('Failed to load routes', 'error');
-    }
-  }
-
-  // --- Update stats ---
-  function updateStats() {
-    if (statRoutes) statRoutes.textContent = String(routes.length);
-  }
-
-  // --- Update history select ---
-  function updateHistorySelect() {
-    historyRouteSelect.innerHTML = '<option value="">Select route...</option>';
-    for (var i = 0; i < routes.length; i++) {
-      var opt = document.createElement('option');
-      opt.value = String(routes[i].id);
-      opt.textContent = routes[i].origin + ' -> ' + routes[i].destination;
-      historyRouteSelect.appendChild(opt);
-    }
-  }
-
-  // --- Escape HTML (XSS safe) ---
-  function esc(str) {
-    if (!str) return '';
-    var d = document.createElement('div');
-    d.textContent = str;
-    return d.innerHTML;
-  }
-
-  // --- Render routes ---
-  function renderRoutes() {
-    routeCount.textContent = String(routes.length);
-
-    var empty = document.querySelector('.empty-state');
-    routeListContainer.innerHTML = '';
-
-    if (routes.length === 0) {
-      if (empty) empty.style.display = '';
-      historyPanel.style.display = 'none';
-      return;
-    }
-
-    if (empty) empty.style.display = 'none';
-
-    for (var i = 0; i < routes.length; i++) {
-      var r = routes[i];
-      var item = document.createElement('div');
-      item.className = 'route-item';
-      item.style.animationDelay = (i * 0.05) + 's';
-
-      // Build meta tags
-      var metaHtml = '';
-      metaHtml += '<span>&#9670; Max ' + esc(String(r.max_price)) + ' ' + esc(r.currency) + '</span>';
-      metaHtml += '<span>&#9670; Every ' + esc(String(r.check_interval_minutes)) + 'min</span>';
-
-      if (r.return_ticket) {
-        metaHtml += '<span><span class="route-tag route-tag-return">Round trip</span></span>';
-      }
-      if (r.include_destinations) {
-        metaHtml += '<span><span class="route-tag route-tag-inc">Allow: ' + esc(r.include_destinations) + '</span></span>';
-      }
-      if (r.exclude_destinations) {
-        metaHtml += '<span><span class="route-tag route-tag-exc">Exclude: ' + esc(r.exclude_destinations) + '</span></span>';
-      }
-
-      item.innerHTML =
-        '<div class="route-main">' +
-          '<div class="route-dest">' + esc(r.origin) + ' <span class="route-arrow">&rarr;</span> ' + esc(r.destination) + '</div>' +
-          '<div class="route-meta">' + metaHtml + '</div>' +
-        '</div>' +
-        '<div class="route-actions">' +
-          '<button class="btn btn-icon-only history-btn" data-id="' + r.id + '" aria-label="History">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>' +
-          '</button>' +
-          '<button class="btn btn-danger delete-btn" data-id="' + r.id + '">Remove</button>' +
-        '</div>';
-
-      routeListContainer.appendChild(item);
-    }
-
-    // Attach events
-    routeListContainer.querySelectorAll('.history-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        showHistory(parseInt(this.getAttribute('data-id')));
-      });
+// --- Admin ---
+async function loadAdmin(){
+  if(!user||user.role!=='admin')return;
+  try{
+    var s=await apiFetch('/admin/stats');
+    $('adminStats').innerHTML='<div class="admin-stat"><div class="admin-stat-value">'+s.totalUsers+'</div><div class="admin-stat-label">Users</div></div><div class="admin-stat"><div class="admin-stat-value">'+s.totalRoutes+'</div><div class="admin-stat-label">Routes</div></div><div class="admin-stat"><div class="admin-stat-value">'+s.totalAlerts+'</div><div class="admin-stat-label">Alerts</div></div>';
+    var u=await apiFetch('/admin/users');
+    var ul=$('adminUsersList');ul.innerHTML='';
+    u.forEach(function(usr){
+      var d=document.createElement('div');d.className='admin-user-item';
+      d.innerHTML='<span>'+esc(usr.name)+' <span class="admin-user-email">('+esc(usr.email)+')</span></span><span><span class="admin-user-role '+usr.role+'">'+usr.role+'</span><span class="admin-user-date" style="margin-left:12px">'+esc(usr.created_at?usr.created_at.slice(0,10):'')+'</span></span>';
+      ul.appendChild(d);
     });
+  }catch(e){console.error('Admin load failed',e);}
+}
 
-    routeListContainer.querySelectorAll('.delete-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        deleteRoute(parseInt(this.getAttribute('data-id')));
-      });
-    });
-  }
-
-  // --- Add route ---
-  async function addRoute(data) {
-    submitBtn.disabled = true;
-    submitBtn.querySelector('.btn-text').textContent = 'Adding...';
-    try {
-      var route = await apiFetch('/routes', { method: 'POST', body: JSON.stringify(data) });
-      routes.push(route);
-      renderRoutes();
-      updateHistorySelect();
-      updateStats();
-      showToast('Now monitoring ' + route.origin + ' -> ' + route.destination);
-      return true;
-    } catch (err) {
-      showToast(err.message, 'error');
-      return false;
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.querySelector('.btn-text').textContent = 'Start Monitoring';
+// --- Init ---
+async function init(){
+  var hash=window.location.hash||'#/';
+  if(hash==='#/')navigateTo('home');
+  
+  await checkSession();
+  updateNav();
+  navigate();
+  
+  if(window.location.hash==='#/dashboard'||window.location.hash==='#/admin'){
+    if(!user)navigateTo('login');
+    else{
+      if(window.location.hash==='#/dashboard')renderDashboard();
+      if(window.location.hash==='#/admin')loadAdmin();
     }
   }
-
-  // --- Delete route ---
-  async function deleteRoute(id) {
-    try {
-      await apiFetch('/routes/' + id, { method: 'DELETE' });
-      routes = routes.filter(function(r) { return r.id !== id; });
-      renderRoutes();
-      updateHistorySelect();
-      updateStats();
-      showToast('Route removed');
-    } catch (err) {
-      showToast(err.message, 'error');
-    }
-  }
-
-  // --- History ---
-  async function showHistory(routeId) {
-    historyPanel.style.display = '';
-    historyRouteSelect.value = String(routeId);
-    await loadHistory(routeId);
-    historyPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  async function loadHistory(routeId) {
-    try {
-      var history = await apiFetch('/routes/' + routeId + '/history?limit=100');
-      buildChart(history);
-      historyTableBody.innerHTML = '';
-      if (history.length === 0) {
-        var tr = document.createElement('tr');
-        var td = document.createElement('td');
-        td.colSpan = 4;
-        td.textContent = 'No history yet. Waiting for next check...';
-        td.style.textAlign = 'center';
-        td.style.color = 'var(--text-muted)';
-        tr.appendChild(td);
-        historyTableBody.appendChild(tr);
-        return;
-      }
-      for (var i = 0; i < history.length; i++) {
-        var rec = history[i];
-        var row = document.createElement('tr');
-        row.innerHTML =
-          '<td>' + esc(rec.checked_at || '-') + '</td>' +
-          '<td><strong>' + esc(String(rec.price)) + ' ' + esc(rec.currency) + '</strong></td>' +
-          '<td>' + esc(rec.airline || '-') + '</td>' +
-          '<td>' + (rec.direct ? 'Direct' : 'Transfer') + '</td>';
-        historyTableBody.appendChild(row);
-      }
-    } catch (err) {
-      showToast('Failed to load history', 'error');
-    }
-  }
-
-  function buildChart(history) {
-    var ctx = document.getElementById('priceChart').getContext('2d');
-    if (priceChart) { priceChart.destroy(); }
-
-    var labels = history.map(function(r) { return r.checked_at ? r.checked_at.slice(0, 16) : ''; }).reverse();
-    var prices = history.map(function(r) { return r.price; }).reverse();
-
-    if (labels.length === 0) {
-      labels = ['No data yet'];
-      prices = [0];
-    }
-
-    priceChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Price',
-          data: prices,
-          borderColor: '#4f8cf7',
-          backgroundColor: function(context) {
-            var chart = context.chart;
-            var ctx2 = chart.ctx;
-            var gradient = ctx2.createLinearGradient(0, 0, 0, chart.height || 260);
-            gradient.addColorStop(0, 'rgba(79, 140, 247, 0.2)');
-            gradient.addColorStop(1, 'rgba(79, 140, 247, 0.0)');
-            return gradient;
-          },
-          fill: true,
-          tension: 0.4,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          pointBackgroundColor: '#4f8cf7',
-          pointBorderColor: '#11141f',
-          pointBorderWidth: 2,
-          borderWidth: 2,
-        }],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: {
-            ticks: { color: '#575e75', maxTicksLimit: 8, font: { size: 11 } },
-            grid: { color: 'rgba(46, 51, 72, 0.3)' },
-          },
-          y: {
-            ticks: { color: '#575e75', font: { size: 11 } },
-            grid: { color: 'rgba(46, 51, 72, 0.3)' },
-          },
-        },
-        interaction: {
-          intersect: false,
-          mode: 'index',
-        },
-      },
-    });
-  }
-
-  // --- Form submit ---
-  routeForm.addEventListener('submit', async function(e) {
-    e.preventDefault();
-
-    var includeRaw = $('includeDestinations').value.trim();
-    var excludeRaw = $('excludeDestinations').value.trim();
-
-    var data = {
-      origin: $('origin').value.trim().toUpperCase(),
-      destination: $('destination').value.trim().toUpperCase(),
-      max_price: parseFloat($('maxPrice').value),
-      email: $('email').value.trim() || null,
-      discord_webhook: $('discordWebhook').value.trim() || null,
-      check_interval_minutes: parseInt($('checkInterval').value),
-      include_destinations: includeRaw || null,
-      exclude_destinations: excludeRaw || null,
-      return_ticket: $('returnTicket').checked,
-    };
-
-    var success = await addRoute(data);
-    if (success) {
-      routeForm.reset();
-      $('returnTicket').checked = false;
+  
+  // Listen for navigation to dashboard/admin after page switch
+  window.addEventListener('hashchange',async function(){
+    var h=window.location.hash;
+    if(h==='#/dashboard'||h==='#/admin'){
+      if(!user){await checkSession();if(!user){navigateTo('login');return;}}
+      if(h==='#/dashboard')renderDashboard();
+      if(h==='#/admin')loadAdmin();
     }
   });
+}
 
-  // --- Auto-uppercase IATA ---
-  function setupIataInput(id) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('input', function() {
-      this.value = this.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
-    });
-  }
-  setupIataInput('origin');
-  setupIataInput('destination');
-
-  function setupFilterInput(id) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('input', function() {
-      this.value = this.value.toUpperCase().replace(/[^A-Z, ]/g, '');
-    });
-  }
-  setupFilterInput('includeDestinations');
-  setupFilterInput('excludeDestinations');
-
-  // --- History select change ---
-  historyRouteSelect.addEventListener('change', function() {
-    if (this.value) {
-      loadHistory(parseInt(this.value));
-    } else {
-      historyPanel.style.display = 'none';
-    }
-  });
-
-  // --- Refresh history ---
-  if (refreshHistoryBtn) {
-    refreshHistoryBtn.addEventListener('click', function() {
-      if (historyRouteSelect.value) {
-        loadHistory(parseInt(historyRouteSelect.value));
-      }
-    });
-  }
-
-  // --- Init ---
-  async function init() {
-    var healthy = await checkHealth();
-    if (healthy) {
-      await loadRoutes();
-    }
-    setInterval(checkHealth, 30000);
-  }
-
-  init();
+init();
 })();
