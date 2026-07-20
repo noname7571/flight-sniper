@@ -61,6 +61,15 @@ export async function initSchema(): Promise<void> {
         sent_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
 
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        name TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'user',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
       CREATE INDEX IF NOT EXISTS idx_price_history_route_id ON price_history(route_id);
       CREATE INDEX IF NOT EXISTS idx_price_history_checked_at ON price_history(checked_at);
       CREATE INDEX IF NOT EXISTS idx_monitored_routes_active ON monitored_routes(active);
