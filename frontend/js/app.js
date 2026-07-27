@@ -209,7 +209,8 @@ async function loadAdmin(){
     var ul=$('adminUsersList');ul.innerHTML='';
     u.forEach(function(usr){
       var d=document.createElement('div');d.className='admin-user-item';
-      d.innerHTML='<span>'+esc(usr.name)+' <span class="admin-user-email">('+esc(usr.email)+')</span></span><span><span class="admin-user-role '+usr.role+'">'+usr.role+'</span><span class="admin-user-date" style="margin-left:12px">'+esc(usr.created_at?usr.created_at.slice(0,10):'')+'</span></span>';
+      var roleClass='admin-user-role '+esc(usr.role);
+      d.innerHTML='<span>'+esc(usr.name)+' <span class="admin-user-email">('+esc(usr.email)+')</span></span><span><span class="'+roleClass+'">'+esc(usr.role)+'</span><span class="admin-user-date" style="margin-left:12px">'+esc(usr.created_at?usr.created_at.slice(0,10):'')+'</span></span>';
       ul.appendChild(d);
     });
   }catch(e){console.error('Admin load failed',e);}

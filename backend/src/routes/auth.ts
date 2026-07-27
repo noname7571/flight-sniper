@@ -5,6 +5,33 @@ import { getUserByEmail, createUser, getUserById } from '../db';
 
 const router = Router();
 
+// Brute-force protection: track failed attempts per IP
+const loginAttempts = new Map<string, { count: number; lockUntil: number }>();
+const MAX_ATTEMPTS = 5;
+const LOCK_MINUTES = 15;
+
+function checkLoginLock(ip: string): { blocked: boolean; remainingMinutes: number } {
+  const record = loginAttempts.get(ip);
+  if (!record) return { blocked: false, remainingMinutes: 0 };
+  if (Date.now() > record.lockUntil) {
+    loginAttempts.delete(ip);
+    return { blocked: false, remainingMinutes: 0 };
+  }
+  return { blocked: true, remainingMinutes: Math.ceil((record.lockUntil - Date.now()) / 60000) };
+}
+
+function recordFailedAttempt(ip: string): void {
+  const record = loginAttempts.get(ip);
+  if (record) {
+    record.count++;
+    if (record.count >= MAX_ATTEMPTS) {
+      record.lockUntil = Date.now() + LOCK_MINUTES * 60 * 1000;
+    }
+  } else {
+    loginAttempts.set(ip, { count: 1, lockUntil: 0 });
+  }
+}
+
 function handleErrors(req: Request, res: Response): boolean {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -47,19 +74,31 @@ router.post('/login',
   async (req: Request, res: Response) => {
     if (!handleErrors(req, res)) return;
 
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const lock = checkLoginLock(ip);
+    if (lock.blocked) {
+      res.status(429).json({ error: `Too many login attempts. Try again in ${lock.remainingMinutes} minutes.` });
+      return;
+    }
+
     const { email, password } = req.body;
     const user = await getUserByEmail(email);
 
     if (!user) {
+      recordFailedAttempt(ip);
       res.status(401).json({ error: 'Invalid email or password' });
       return;
     }
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
+      recordFailedAttempt(ip);
       res.status(401).json({ error: 'Invalid email or password' });
       return;
     }
+
+    // Clear failed attempts on success
+    loginAttempts.delete(ip);
 
     req.session.userId = user.id;
     req.session.userRole = user.role;
