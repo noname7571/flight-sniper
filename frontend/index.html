@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Flight Sniper</title>
+<title>Flight Sniper - Smart Flight Price Alerts</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f8cf7' stroke-width='2'%3E%3Cpath d='M22 2L11 13'/%3E%3Cpath d='M22 2l-7 20-4-9-9-4 20-7z'/%3E%3C/svg%3E">
+<meta name="description" content="Monitor flight prices from Vienna, Budapest, Prague, and Bratislava. Get instant email or Discord alerts when tickets drop below your target price.">
 <link rel="stylesheet" href="css/style.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -47,12 +49,12 @@
 <!-- ====== PAGE: LANDING ====== -->
 <section class="page" id="page-home">
   <div class="hero">
-    <div class="hero-badge">Flight Price Tracking</div>
-    <h1 class="hero-title">Never overpay<br>for flights again</h1>
-    <p class="hero-sub">Monitor flight prices from airports across Central Europe. Get notified via email or Discord when prices drop below your target.</p>
+    <div class="hero-badge">Real-time flight price monitoring</div>
+    <h1 class="hero-title">The moment prices drop,<br>you will know</h1>
+    <p class="hero-sub">I got tired of checking Google Flights every day. So I built something that does it for me. Pick a route, set your max price, and get a ping on Discord or email the second a deal shows up. Focused on Vienna, Budapest, Prague, and Bratislava -- because that is where I fly from.</p>
     <div class="hero-actions">
-      <a href="#/signup" class="btn btn-primary btn-lg" data-nav>Start Free</a>
-      <a href="#/dashboard" class="btn btn-outline btn-lg" data-nav>View Dashboard</a>
+      <a href="#/signup" class="btn btn-primary btn-lg" data-nav>Try It Free</a>
+      <a href="#/dashboard" class="btn btn-outline btn-lg" data-nav>See The Dashboard</a>
     </div>
   </div>
 
@@ -71,27 +73,31 @@
   <div class="features-grid">
     <div class="feature-card">
       <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
-      <h3>Set Your Route</h3>
-      <p>Choose departure and destination airports, set your maximum price, and configure notification channels.</p>
+      <h3>Pick a route, set a price</h3>
+      <p>Tell me where you are going, what you are willing to pay, and how you want to be notified. The dashboard handles the rest.</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-      <h3>Automatic Monitoring</h3>
-      <p>We check prices every hour around the clock against Google Flights data. No manual checking needed.</p>
+      <h3>Checks every hour, all day</h3>
+      <p>Every hour, the system pings Google Flights to see if prices changed. If something hits your target, you are the first to know.</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
-      <h3>Instant Alerts</h3>
-      <p>Get notified via email or Discord the moment a ticket price drops below your target threshold.</p>
+      <h3>Discord or email, your call</h3>
+      <p>Webhook pings go straight to your Discord server. Or keep it old-school with email. Both work, neither will spam you.</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-      <h3>Price History</h3>
-      <p>Track price trends over time with interactive charts. Know the best time to book.</p>
+      <h3>See how prices move</h3>
+      <p>Every check is logged. The chart shows you the trend so you know whether that $50 ticket is actually a good deal or just normal pricing.</p>
     </div>
   </div>
 
-  <div class="section-label" id="landing-pricing">Simple Pricing</div>
+  <div class="testimonial-banner">
+    <span class="testimonial-text">Built for a single airport. Covers 8 now. Still free to start.</span>
+  </div>
+
+  <div class="section-label" id="landing-pricing">Pricing</div>
   <div class="pricing-grid">
     <div class="pricing-card">
       <h3>Free</h3>
@@ -116,7 +122,7 @@
         <li>Include/exclude filters</li>
         <li>Return ticket monitoring</li>
       </ul>
-      <a href="#/signup" class="btn btn-primary btn-full" data-nav>Coming Soon</a>
+      <a href="#/signup" class="btn btn-primary btn-full" data-nav>Get Started</a>
     </div>
     <div class="pricing-card">
       <h3>Pro</h3>
@@ -130,7 +136,7 @@
         <li>Multi-airport monitoring</li>
         <li>Priority support</li>
       </ul>
-      <a href="#/signup" class="btn btn-outline btn-full" data-nav>Coming Soon</a>
+      <a href="#/signup" class="btn btn-outline btn-full" data-nav>Get Started</a>
     </div>
   </div>
 </section>
@@ -201,34 +207,36 @@
 <section class="page" id="page-pricing" style="display:none">
   <div class="hero hero-sm">
     <h1 class="hero-title">Pricing</h1>
-    <p class="hero-sub">Start free, upgrade when you need more routes and features.</p>
+    <p class="hero-sub">The free tier covers one route. If you are tracking multiple trips, the paid plans pay for themselves the first time you catch a price drop.</p>
   </div>
   <div class="pricing-grid">
     <div class="pricing-card"><h3>Free</h3><div class="pricing-price">$0<span class="pricing-period">/mo</span></div><ul class="pricing-features"><li>1 monitored route</li><li>Daily price checks</li><li>Email notifications</li><li>7-day price history</li></ul><a href="#/signup" class="btn btn-outline btn-full" data-nav>Get Started</a></div>
-    <div class="pricing-card pricing-featured"><div class="pricing-badge">Popular</div><h3>Starter</h3><div class="pricing-price">$4<span class="pricing-period">/mo</span></div><ul class="pricing-features"><li>10 routes</li><li>Hourly checks</li><li>Email + Discord</li><li>90-day history</li><li>Filters</li><li>Return trips</li></ul><a href="#/signup" class="btn btn-primary btn-full" data-nav>Coming Soon</a></div>
-    <div class="pricing-card"><h3>Pro</h3><div class="pricing-price">$8<span class="pricing-period">/mo</span></div><ul class="pricing-features"><li>Unlimited routes</li><li>15-min checks</li><li>Email + Discord + SMS</li><li>Unlimited history</li><li>Multi-airport</li><li>Priority support</li></ul><a href="#/signup" class="btn btn-outline btn-full" data-nav>Coming Soon</a></div>
+    <div class="pricing-card pricing-featured"><div class="pricing-badge">Popular</div><h3>Starter</h3><div class="pricing-price">$4<span class="pricing-period">/mo</span></div><ul class="pricing-features"><li>10 routes</li><li>Hourly checks</li><li>Email + Discord</li><li>90-day history</li><li>Filters</li><li>Return trips</li></ul><a href="#/signup" class="btn btn-primary btn-full" data-nav>Get Started</a></div>
+    <div class="pricing-card"><h3>Pro</h3><div class="pricing-price">$8<span class="pricing-period">/mo</span></div><ul class="pricing-features"><li>Unlimited routes</li><li>15-min checks</li><li>Email + Discord + SMS</li><li>Unlimited history</li><li>Multi-airport</li><li>Priority support</li></ul><a href="#/signup" class="btn btn-outline btn-full" data-nav>Get Started</a></div>
   </div>
 </section>
 
 <!-- ====== PAGE: TERMS ====== -->
 <section class="page" id="page-terms" style="display:none">
   <div class="legal-page">
-    <h1>Terms & Conditions</h1>
-    <p class="legal-date">Last updated: July 2026</p>
-    <h3>1. Service Description</h3>
-    <p>Flight Sniper monitors flight ticket prices from public data sources and notifies users when prices meet their defined criteria. We do not sell tickets or process payments.</p>
-    <h3>2. Data Sources</h3>
-    <p>Price data is obtained through third-party APIs and publicly available sources. Prices may not reflect real-time availability and should be verified with the airline before purchase.</p>
-    <h3>3. User Accounts</h3>
-    <p>Users are responsible for maintaining the confidentiality of their account credentials. You may not share your account with others.</p>
-    <h3>4. Limitation of Liability</h3>
-    <p>Flight Sniper is provided "as is" without any warranty. We are not responsible for incorrect prices, missed deals, or any financial losses resulting from the use of this service.</p>
+    <h1>Terms of Service</h1>
+    <p class="legal-date">Last updated: July 27, 2026</p>
+    <h3>1. What This Service Does</h3>
+    <p>Flight Sniper checks flight prices using the SerpApi Google Flights API and notifies you when prices match your criteria. I do not sell tickets, process payments, or act as a travel agent. This is a monitoring tool, not a booking platform.</p>
+    <h3>2. Price Accuracy</h3>
+    <p>Prices come from Google Flights data via SerpApi. They are a snapshot, not a guarantee. Always verify the final price on the airline's website before purchasing. I have no control over pricing, availability, or airline errors.</p>
+    <h3>3. Your Account</h3>
+    <p>You are responsible for your account credentials. If you share your login, anything that happens under your account is on you. That said, there is no sensitive personal data stored here beyond your email and name.</p>
+    <h3>4. What I Collect</h3>
+    <p>Your email, name, and the routes you choose to monitor. That is it. No payment info, no location tracking, no ads. Email addresses are used only for sending price alerts you asked for.</p>
     <h3>5. Third-Party Services</h3>
-    <p>This service uses SerpApi for flight data and Discord/email for notifications. These services have their own terms and privacy policies.</p>
-    <h3>6. Changes</h3>
-    <p>We reserve the right to modify these terms at any time. Users will be notified of material changes via email.</p>
-    <h3>7. Contact</h3>
-    <p>For questions, reach out via the contact information provided on this site.</p>
+    <p>This tool uses SerpApi (for flight price lookups), Discord (for webhook notifications if you choose), and standard email delivery. Each of those services has its own terms. I am not responsible for their uptime or data handling.</p>
+    <h3>6. Disclaimer</h3>
+    <p>Flight Sniper is provided as-is. I built it because I wanted it. It might have bugs, prices might be stale, and occasionally the API might not return results. Use it at your own discretion.</p>
+    <h3>7. Changes to These Terms</h3>
+    <p>If I change these terms, the updated date at the top will change. For material changes, I will send an email.</p>
+    <h3>8. Contact</h3>
+    <p>Open an issue on GitHub or reach out directly via the repository profile. I usually respond within a day.</p>
   </div>
 </section>
 
@@ -241,8 +249,9 @@
       <a href="#/" data-nav>Home</a>
       <a href="#/pricing" data-nav>Pricing</a>
       <a href="#/terms" data-nav>Terms</a>
+
     </div>
-    <p class="footer-text">Flight Sniper &mdash; Flight price monitoring for Central Europe</p>
+    <p class="footer-text">Built for Central Europe. Not affiliated with any airline.</p>
   </div>
 </footer>
 

@@ -54,6 +54,9 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 
 /* Sections */
 .section-label{font-size:13px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;text-align:center;margin:48px 0 20px}
+.testimonial-banner{text-align:center;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r3);padding:20px 24px;margin-bottom:8px;border-left:3px solid var(--ac)}
+.testimonial-text{font-size:14px;color:var(--t2);line-height:1.5}
+.testimonial-author{display:block;font-size:12px;color:var(--t3);margin-top:4px}
 
 /* Airport Cards Wide */
 .airport-grid-wide{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
